@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>麻酔記録</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: clinical and calm, an operating-room instrument
+   IDEA: the paper anesthesia chart, made tappable
+   PICTURE: big phase buttons, live vitals cells and a vitals strip chart
+   COLOUR and TYPE: white field, surgical teal; amber/red only for values out of range; Noto Sans JP
+   LAYOUT: patient bar + clock on top, then buttons; summary and settings as tabs */
+:root{color-scheme:light dark;--bg:light-dark(#fff,#0e171b);--ink:light-dark(#13202b,#e4ecef);--mut:light-dark(#5a6a74,#8fa1aa);--line:light-dark(#dde5e8,#22323a);--card:light-dark(#f3f6f7,#15222a);--pri:light-dark(#0a6b74,#37b3bd);--pin:light-dark(#fff,#04252a);--y:light-dark(#fff0bf,#4a3a06);--yb:#d9a200;--r:light-dark(#ffdcdc,#521616);--rb:#d62828}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "Noto Sans JP",system-ui,sans-serif;overflow-x:clip;font-variant-numeric:tabular-nums}
+button,input,textarea{font:inherit;color:inherit}button{cursor:pointer}
+:focus-visible{outline:3px solid var(--pri);outline-offset:2px}
+.top{position:sticky;top:0;z-index:5;background:var(--pri);color:var(--pin);display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px max(4vw,14px);flex-wrap:wrap}
+.pt{font-weight:700;font-size:17px;line-height:1.3}.pt .no,.pt .nm{display:inline-block;background:rgb(255 255 255/.18);border-radius:6px;padding:1px 8px;margin:0 6px 4px 0}.pt .nm{font-size:19px}
+.pt small{display:block;font-weight:400;opacity:.85;font-size:13px}
+.clk{display:flex;gap:20px}.clk div{text-align:right}.clk small{display:block;font-size:13px;opacity:.85}.clk b{font-size:28px;line-height:1.1;white-space:nowrap}.clk b.sm{font-size:17px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);padding:0 max(4vw,14px)}
+.tabs button{border:0;background:none;padding:10px 16px;min-height:48px;border-bottom:3px solid transparent;font-weight:500;color:var(--mut)}
+.tabs .on{color:var(--ink);border-color:var(--pri)}
+main{max-width:1100px;margin:0 auto;padding:8px max(4vw,14px) 80px}
+h2{font-size:17px;margin:24px 0 8px}h3{font-size:22px;margin:0 0 6px;line-height:1.2}
+.ph{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px}
+.ph button{min-height:58px;border:1px solid var(--line);background:var(--card);border-radius:10px;font-weight:700}
+.ph button.done{background:var(--pri);color:var(--pin);border-color:var(--pri)}.ph small{display:block;font-weight:400;font-size:13px}
+.vh{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.pri{background:var(--pri);color:var(--pin);border:0;border-radius:10px;min-height:48px;padding:0 18px;font-weight:700}
+.big{min-height:56px;font-size:17px}
+.btn{display:inline-flex;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:10px;min-height:48px;padding:0 16px;font-weight:500;cursor:pointer;color:var(--ink)}
+.last{display:grid;grid-template-columns:repeat(auto-fill,minmax(116px,1fr));gap:8px;margin-top:10px}
+.cell{border-radius:10px;background:var(--card);padding:8px 10px;border:2px solid transparent}
+.cell span{font-size:13px;color:var(--mut)}.cell b{display:block;font-size:26px;line-height:1.15}.cell i{font-style:normal;font-size:13px;color:var(--mut)}
+.y{background:var(--y)!important;border-color:var(--yb)!important}.r{background:var(--r)!important;border-color:var(--rb)!important}
+.fig{position:relative;min-height:340px;margin-top:12px;border:1px solid var(--line);border-radius:12px}
+.fig>svg{position:absolute;inset:0;width:100%;height:100%}
+.empty{position:absolute;inset:0;display:grid;place-items:center;color:var(--mut);font-size:14px;padding:16px;text-align:center}
+.dg{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.dg button{min-height:60px;text-align:left;padding:8px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card)}
+.dg button b{display:block;font-size:15px;line-height:1.3}.dg button small{color:var(--mut);font-size:13px}
+details{margin-top:10px}summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:500;color:var(--pri)}
+.gl{font-size:13px;color:var(--mut);margin:12px 0 4px}
+.cr{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;flex-wrap:wrap}
+.cr.on{border:2px solid var(--pri)}.cr b{display:block}.cr span{font-size:14px;color:var(--mut)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px}
+.log{list-style:none;padding:0;margin:0}
+.log li{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);align-items:start}
+.log time{font-weight:700}.log img{max-width:220px;width:100%;border-radius:8px;display:block;margin-top:4px}
+.del{border:0;background:none;color:var(--mut);min-width:48px;min-height:40px}.del[data-arm]{color:var(--rb);font-weight:700}
+.due{background:var(--rb);color:#fff;border-radius:10px;padding:12px 14px;font-weight:700;margin-top:12px;animation:bl 1.2s infinite}
+@keyframes bl{50%{opacity:.6}}@media(prefers-reduced-motion:reduce){.due{animation:none}}
+.sh{position:fixed;inset:0;background:rgb(0 0 0/.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sh[hidden]{display:none}
+.shc{background:var(--bg);width:min(640px,100%);max-height:92vh;overflow:auto;border-radius:16px 16px 0 0;padding:20px max(4vw,16px) 28px}
+@media(min-width:700px){.sh{align-items:center}.shc{border-radius:16px}}
+label{display:block;font-size:14px;color:var(--mut);margin-top:10px}
+label input,textarea{display:block;width:100%;margin-top:4px;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);min-height:44px;color:var(--ink)}
+.lb{font-size:14px;color:var(--mut);margin-top:12px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.chip{min-height:44px;padding:0 14px;border-radius:22px;border:1px solid var(--line);background:var(--card)}
+.chip.on{background:var(--pri);color:var(--pin);border-color:var(--pri)}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ref{font-weight:700;margin:8px 0 0}.nt{background:var(--card);border-radius:8px;padding:8px 10px;font-size:14px}
+.calc{font-size:20px;font-weight:700;margin:10px 0 2px}.warn{color:var(--rb);font-size:14px;font-weight:700;min-height:1.4em;margin:0}
+.acts{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+.vr{display:grid;grid-template-columns:minmax(0,1fr) 52px 100px 52px;gap:6px;align-items:center;padding:3px 0}
+.vr .vl{font-weight:500;line-height:1.25}.vr small{display:block;font-size:13px;color:var(--mut);font-weight:400}
+.st{min-height:48px;border-radius:10px;border:1px solid var(--line);background:var(--card);font-size:22px}
+.vr input{text-align:center;font-size:20px;font-weight:700;min-height:48px;border:2px solid var(--line);border-radius:10px;background:var(--bg);width:100%;color:var(--ink)}
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{color:var(--mut);font-weight:500}td.n,th.n{text-align:right}
+.plan td{white-space:normal}.plan td.n{white-space:nowrap}
+.ck{width:56px;text-align:center}.cb{width:44px;height:44px;border:2px solid var(--mut);border-radius:8px;background:var(--bg);font-size:24px;font-weight:700;line-height:1;color:var(--pin)}.cb.on{background:var(--pri);border-color:var(--pri)}
+tr.used td{background:light-dark(#e6f3f4,#12303a)}
+.gd{border-top:1px solid var(--line);padding-top:10px;margin-top:12px}.gd h4{margin:0 0 4px;font-size:17px;color:var(--rb)}.eml{margin:4px 0 0;padding-left:20px;font-weight:700}.btn.em{border-color:var(--rb);color:var(--rb)}
+textarea.kt{font-size:14px;line-height:1.6;white-space:pre-wrap}
+.paperw{margin-top:12px}.zrow{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}.zb{display:flex;align-items:center;gap:6px}.zb .btn{min-width:48px;font-size:20px;padding:0}.zb span{min-width:48px;text-align:center;font-size:14px}.pr svg{touch-action:pan-x pan-y}
+.pgrid{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--bg)}.pgrid>svg{flex:none;border-right:1px solid var(--line)}.pr{flex:1;overflow-x:auto;-webkit-overflow-scrolling:touch}.onlyprint{display:none}@media print{.onlyprint{display:block}}.leg{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:14px;margin:6px 0}.leg .mut{font-size:13px;margin:0}
+.pscroll,.sheet .scroll{border:1px solid var(--line);border-radius:10px}.paper{display:block}
+.sheet{margin-top:28px;border-top:2px solid var(--ink);padding-top:12px}.sh-t{text-align:center;letter-spacing:.2em;margin:4px 0 10px}
+.hd{width:100%;border-collapse:collapse;margin-bottom:10px}.hd td{border:1px solid var(--ink);padding:6px 8px;white-space:normal;font-size:15px}.hd td span{font-size:12px;color:var(--mut);margin-right:8px}
+.sel{border:1.5px solid var(--ink);border-radius:50%;padding:0 4px}
+.hd2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:8px}.hd2 h4,.memo h4{margin:6px 0 4px;font-size:14px}.hd2 ul,.memo ul{margin:0;padding-left:18px;font-size:14px}.hd3{display:grid;grid-template-columns:1fr 1fr;gap:12px}.hd3 p{margin:0;border-bottom:1px solid var(--ink);min-height:1.6em}
+.memo{border:1px solid var(--ink);border-radius:4px;padding:8px 10px;margin-top:10px;min-height:120px}
+@media(max-width:600px){.hd2{grid-template-columns:1fr}}
+@media print{.sheet{break-before:page}.sheet .scroll{overflow:visible;border:0}.sheet svg{width:100%;height:auto}}
+.inf{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px;padding:8px 12px;background:var(--card);border-radius:10px}.inf span{margin-right:16px;font-weight:700;white-space:nowrap}.inf i{font-style:normal;font-weight:400;color:var(--mut);font-size:13px;margin-right:6px}
+.tbtn{border:0;background:none;font-weight:700;text-decoration:underline dotted;text-underline-offset:3px;padding:0;min-height:36px;text-align:left;color:var(--ink)}.wht{display:block;margin-top:8px;font-size:18px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);min-height:44px}.wht[hidden]{display:none}
+.kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-top:8px}
+.kv b{font-size:17px!important}
+.mut{color:var(--mut);font-size:14px;margin:4px 0}
+.ph-imgs{display:flex;flex-wrap:wrap;gap:10px}.ph-imgs figure{margin:0;width:min(260px,100%)}.ph-imgs img{width:100%;border-radius:8px}.ph-imgs figcaption{font-size:13px;color:var(--mut)}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;z-index:30;max-width:90vw}
+.set td input{width:90px;min-height:44px;font-size:16px;text-align:right;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink)}
+@media(max-width:600px){.clk b{font-size:22px}.f2{grid-template-columns:1fr}.vr{grid-template-columns:minmax(0,1fr) 48px 84px 48px}}
+@media print{.top,.tabs,.noprint,#v-rec,#v-set,#v-plan{display:none!important}body{background:#fff;color:#000}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="pt" id="pt">症例未登録</div>
+  <div class="clk">
+    <div><small>麻酔経過</small><b id="el">--:--</b></div>
+    <div><small>次のバイタルまで</small><b id="nx">--:--</b></div>
+  </div>
+</header>
+<nav class="tabs" id="tabs"><button data-v="plan">計画</button><button data-v="rec" class="on">記録</button><button data-v="sum">まとめ</button><button data-v="hist">履歴</button><button data-v="set">設定</button></nav>
+<main>
+<section id="v-plan" hidden></section>
+<section id="v-rec">
+  <div class="inf" id="inf"></div>
+  <div id="due" class="due" hidden>前回のバイタル記録から5分たちました。記録してください</div>
+  <h2>流れ</h2>
+  <div id="ph" class="ph"></div>
+  <div class="vh" style="margin-top:24px"><h2 style="margin:0">バイタル（最新）</h2><button class="pri big" id="bV">＋ バイタルを記録</button></div>
+  <div id="last" class="last"></div>
+  <div id="paperW" class="paperw"></div>
+  <h2>薬剤</h2>
+  <div id="dr"></div>
+  <h2>輸液</h2>
+  <div id="flu"></div>
+  <h2>CRI（持続投与）</h2>
+  <div id="cri"></div>
+  <div class="row"><label class="btn" for="phIn" style="margin:0">写真（心電図・モニター）</label><input type="file" id="phIn" accept="image/*" capture="environment" hidden><button class="btn" id="bN">メモ</button><button class="btn em" id="bE">緊急薬・異常時ガイド</button></div>
+  <h2>記録の流れ</h2><p class="mut">時刻をタップすると修正できます。</p>
+  <ol id="log" class="log"></ol>
+</section>
+<section id="v-sum" hidden></section>
+<section id="v-hist" hidden></section>
+<section id="v-set" hidden>
+  <h2>薬の濃度（mg/mL）</h2>
+  <p class="mut">プロポフォール以外は一般的な製剤の値を仮に入れています。院内の製剤に合わせて直してください（この端末に保存されます）。</p>
+  <div class="scroll"><table class="set"><thead><tr><th>薬剤</th><th>分類</th><th class="n">濃度</th></tr></thead><tbody id="coT"></tbody></table></div>
+  <h2>音声のお知らせ</h2>
+  <p class="mut">前回のバイタル記録から5分たつと「5分たちました。記録してください」と女性の声でお知らせします。</p>
+  <div class="row" style="margin-top:8px"><button class="btn" id="vOn"></button><button class="btn" id="vTest">声を試す</button></div>
+  <p class="mut" id="vInfo"></p>
+  <h2>バイタルの読み上げ</h2>
+  <p class="mut">「記録する」を押したときに、入力したバイタルを声で読み上げます。バイタルの入力画面でも切り替えられます。</p>
+  <div class="row" style="margin-top:8px"><button class="btn" id="rbOn"></button></div>
+  <h2>症例</h2>
+  <button class="btn" data-new>この症例を保存して、新しい症例を始める</button>
+  <p class="mut">今の症例は「履歴」に保存されます（この端末に最大10例）。カルテには「まとめ」から印刷・コピーして残してください。</p>
+</section>
+</main>
+<div id="sh" class="sh" hidden><div class="shc" id="shc" role="dialog" aria-modal="true"></div></div>
+<div id="toast" class="toast" hidden></div>
+<script>
+{
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const KEY='anes-rec-v1',CK='anes-conc-v1';
+const ls={get(k){try{return JSON.parse(localStorage.getItem(k))}catch(e){return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+const esc=s=>String(s??'').replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+const pad=n=>String(n).padStart(2,'0');
+const hm=t=>{const d=new Date(t);return pad(d.getHours())+':'+pad(d.getMinutes())};
+const clk=ms=>{ms=Math.max(0,ms);const s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor(s%3600/60);return (h?h+':'+pad(m):m)+':'+pad(s%60)};
+const dj=ms=>{const m=Math.round(ms/60000);return (m>=60?Math.floor(m/60)+'時間':'')+(m%60)+'分'};
+const kata=s=>String(s||'').replace(/[ぁ-ゖ]/g,c=>String.fromCharCode(c.charCodeAt(0)+0x60));
+const rs=r=>r[0]===r[1]?String(r[0]):r[0]+'–'+r[1];
+const rr2=(a,b)=>fmt(a)===fmt(b)?fmt(a):fmt(a)+'–'+fmt(b);
+const fmt=x=>x==null||isNaN(x)?'-':String(+(+x).toFixed(Math.abs(x)>=100?0:Math.abs(x)>=10?1:Math.abs(x)>=1?2:3));
+
+const DR=[
+{id:'dex',n:'デクスメデトミジン',c:0.5,u:'µg',d:[3,7],f:[3,10],r:['IM','IV'],g:'前投薬',nt:'徐脈・末梢血管収縮・心拍出量低下。心疾患・循環不安定例では慎重に'},
+{id:'mid',n:'ミダゾラム',c:5,u:'mg',d:[0.1,0.2],f:[0.1,0.2],r:['IV','IM'],g:'前投薬',nt:'健康で興奮している動物では単独で鎮静不十分のことあり'},
+{id:'but',n:'ブトルファノール',c:5,u:'mg',d:[0.2,0.4],f:[0.2,0.4],r:['IV','IM'],g:'前投薬',nt:'強い外科疼痛には単独では不十分'},
+{id:'bup',n:'ブプレノルフィン',c:0.2,u:'mg',d:[0.01,0.02],f:[0.01,0.02],r:['IV','IM','口腔粘膜'],g:'前投薬'},
+{id:'ace',n:'アセプロマジン',c:10,u:'mg',d:[0.01,0.03],f:[0.025,0.05],r:['IM'],g:'前投薬',nt:'低血圧・循環血液量減少では避けるか慎重に。拮抗薬なし'},
+{id:'pro',n:'プロポフォール',c:10,u:'mg',d:[2,6],f:[2,6],r:['IV'],g:'導入',nt:'効果を見ながら少量ずつ。無呼吸・低血圧に注意'},
+{id:'alf',n:'アルファキサロン',c:10,u:'mg',d:[1,3],f:[2,5],r:['IV'],g:'導入',nt:'効果を見ながら少量ずつ。急速投与で覚醒時興奮あり'},
+{id:'eto',n:'エトミデート',c:2,u:'mg',d:[1,3],f:[1,3],r:['IV'],g:'導入',nt:'循環抑制が小さい。筋攣縮・副腎皮質抑制に注意'},
+{id:'ketI',n:'ケタミン（導入）',c:50,u:'mg',d:null,f:[2,5],r:['IV'],g:'導入',nt:'犬は個別調整。猫はミダゾラム0.2–0.3 mg/kgと併用'},
+{id:'fen',n:'フェンタニル',c:0.05,u:'µg',d:[2,5],f:[2,5],r:['IV'],g:'術中鎮痛',nt:'呼吸抑制に注意'},
+{id:'ket',n:'ケタミン（鎮痛）',c:50,u:'mg',d:[0.5,1],f:[0.5,1],r:['IV'],g:'術中鎮痛'},
+{id:'lid',n:'リドカイン（静注）',c:20,u:'mg',d:[1,2],f:null,r:['IV'],g:'術中鎮痛',nt:'猫では全身投与を犬と同じ感覚で使わない'},
+{id:'lidL',n:'リドカイン（局所）',c:20,u:'mg',d:[0,5],f:[0,5],mx:1,r:['局所'],g:'局所麻酔'},
+{id:'bpvL',n:'ブピバカイン（局所）',c:5,u:'mg',d:[0,2],f:[0,2],mx:1,r:['局所'],g:'局所麻酔'},
+{id:'ropL',n:'ロピバカイン（局所）',c:7.5,u:'mg',d:[0,2],f:[0,2],mx:1,r:['局所'],g:'局所麻酔'},
+{id:'atr',n:'アトロピン',c:0.5,u:'mg',d:[0.05,0.05],f:[0.05,0.05],r:['SC','IM','IV'],g:'前投薬',nt:'徐脈だけで投与が必要とは限らない。血圧・心拍出量と併せて判断'},
+{id:'amp',n:'アンピシリン',c:100,u:'mg',d:[20,30],f:[20,30],r:['IV'],g:'抗生剤',nt:'溶解後の濃度は「設定」で院内の溶解方法に合わせてください（初期値は1 gを10 mLで溶解）'},
+{id:'adn',n:'アドナ（カルバゾクロム）',c:5,u:'mg',d:[0.5,0.5],f:[0.5,0.5],r:['IV','SC','IM'],g:'止血剤'},
+{id:'con',n:'トランサミン（トラネキサム酸）',c:50,u:'mg',d:[5,5],f:[5,5],r:['IV'],g:'止血剤',nt:'濃度の初期値は5%製剤（50 mg/mL）。10%製剤なら「設定」で100に変更'},
+{id:'eph',n:'エフェドリン（100倍希釈）',c:0.4,u:'mg',d:[0.04,0.04],f:[0.04,0.04],r:['IV'],g:'昇圧薬',nt:'40 mg/mL製剤を100倍に希釈（0.4 mg/mL）し、0.1 mL/kgで投与'},
+{id:'pdn',n:'プレドニゾロン',c:10,u:'mg',d:[0.5,2],f:[0.5,2],r:['IV','SC','IM'],g:'ステロイド'},
+{id:'dxm',n:'デキサメタゾン',c:1,u:'mg',d:[0.1,0.5],f:[0.1,0.5],r:['IV','SC','IM'],g:'ステロイド'},
+{id:'dob',n:'ドブタミン',c:20,u:'µg',d:null,f:null,r:['IV'],g:'循環作動薬',cr:1},
+{id:'dop',n:'ドパミン',c:20,u:'µg',d:null,f:null,r:['IV'],g:'循環作動薬',cr:1},
+{id:'ati',n:'アチパメゾール',c:5,u:'mg',d:null,f:null,r:['IM','IV'],g:'その他'},
+{id:'epi',n:'アドレナリン',c:1,u:'mg',d:[0.01,0.01],f:[0.01,0.01],r:['IV','IO'],g:'緊急薬',nt:'心肺蘇生時は低用量。高用量は推奨されない（RECOVER 2024）'},
+{id:'ami',n:'アミオダロン',c:50,u:'mg',d:[5,5],f:[5,5],r:['IV','IO'],g:'緊急薬',nt:'除細動に反応しないショック適応リズムで検討（RECOVER 2024では猫で提案）'},
+{id:'nal',n:'ナロキソン',c:0.2,u:'mg',d:[0.04,0.04],f:[0.04,0.04],r:['IV','IM'],g:'緊急薬',nt:'オピオイドの拮抗。濃度は院内の製剤に合わせて「設定」で確認'},
+{id:'flz',n:'フルマゼニル',c:0.1,u:'mg',d:[0.01,0.01],f:[0.01,0.01],r:['IV'],g:'緊急薬',nt:'ミダゾラムの拮抗'},
+{id:'nsd',n:'NSAIDs',c:5,u:'mg',d:null,f:null,r:['SC','IV','PO'],g:'その他',nt:'腎血流低下・脱水・低血圧では慎重に。猫は製剤ごとの承認用量を厳守'}];
+const CR=[
+{id:'fenC',n:'フェンタニル',dr:'fen',u:'µg',d:[2,5],f:[2,5]},
+{id:'dobC',p:'循環維持（強心）',n:'ドブタミン',dr:'dob',u:'µg',tm:'min',d:[1,1],f:[1,1],st:1,nt:'開始量 1 µg/kg/min。希釈して使う場合は「設定」で希釈後の濃度を入れるとmL/hが合います'},
+{id:'dopC',p:'循環維持（強心・昇圧）',n:'ドパミン',dr:'dop',u:'µg',tm:'min',d:[1,1],f:[1,1],st:1,nt:'開始量 1 µg/kg/min。希釈して使う場合は「設定」で希釈後の濃度を入れるとmL/hが合います'},
+{id:'ketC',off:1,n:'ケタミン',dr:'ket',u:'mg',d:[0.12,0.6],f:[0.12,0.6]},
+{id:'lidC',off:1,n:'リドカイン',dr:'lid',u:'mg',d:[1,2],f:null,nt:'猫では犬と同じ感覚で使わない'}];
+const cu=x=>x.u+'/kg/'+(x.tm==='min'?'min':'h');
+const cml=(x,v)=>toMg(x.u,v)*(x.tm==='min'?60:1)/cc(D(x.dr));
+const VF=[
+{k:'hr',n:'心拍数',u:'回/分',st:1,d:[60,120],f:[100,180]},
+{k:'spo2',n:'SpO₂',u:'%',st:1,d:[95,100],f:[95,100],red:v=>v<90},
+{k:'et',n:'EtCO₂',u:'mmHg',st:1,d:[30,40],f:[25,35],red:v=>v>60},
+{k:'map',n:'MAP',u:'mmHg',st:1,d:[65,100],f:[65,100],red:v=>v<60},
+{k:'rr',n:'呼吸数',u:'回/分',st:1,d:[8,20],f:[8,20]},
+{k:'tv',n:'一回換気量',u:'mL',st:1},
+{k:'inh',n:'麻酔濃度',u:'%',st:0.1},
+{k:'exi',n:'呼気濃度',u:'%（Ex）',st:0.1},
+{k:'tmp',n:'体温',u:'℃',st:0.1,d:[37.5,39],f:[37.5,39],red:v=>v<35}];
+const ECG=['洞調律','洞性徐脈','洞性頻脈','VPC単発','VPC連発','AVブロックI度','AVブロックII度','AVブロックIII度','心房細動','その他'];
+const PR={
+d1:{n:'① 犬・低侵襲',sp:'犬',dr:['dex','but','bup','pro','alf','lidL','bpvL','nsd'],nt:'ASA I〜II。避妊・去勢、体表腫瘤、歯科など'},
+d2:{n:'② 犬・高侵襲',sp:'犬',cri:['fenC'],dr:['dex','mid','bup','fen','pro','alf','ket','lid','lidL','bpvL','ropL','nsd'],nt:'開腹・整形外科・腫瘍外科。術前鎮痛を十分に行い、フェンタニルのCRIと局所・区域麻酔を併用。長時間・開胸なら人工呼吸を事前に検討'},
+c1:{n:'③ 猫・低侵襲',sp:'猫',dr:['dex','but','bup','alf','pro','lidL','bpvL','nsd'],nt:'避妊・去勢、体表の手術など。抜管時は喉頭刺激・喉頭痙攣に注意'},
+c2:{n:'④ 猫・高侵襲',sp:'猫',cri:['fenC'],dr:['dex','mid','bup','fen','alf','pro','ket','lidL','bpvL','ropL','nsd'],nt:'開腹・腫瘍外科など。フェンタニルのCRIと局所麻酔を併用。リドカインの全身投与は犬と同じ感覚で使わない'},
+hr:{n:'⑤ 高リスク（ASA III以上・高齢・心疾患）',sp:null,dr:['mid','but','bup','fen','eto','alf','pro','atr'],nt:'術前に補正できる異常を安定化。デクスメデトミジン・アセプロマジンは避けるか慎重に。導入薬は減量して少量ずつ。吸入麻酔薬は必要最小限にし、血圧・心電図・換気・体温を特に重視'},
+sed:{n:'⑥ 短時間の鎮静・処置（CT・MRI・検査）',sp:null,dr:['dex','but','mid','pro','alf','ati'],nt:'気道確保と酸素の準備をしてから開始。終了後はアチパメゾールでの拮抗を検討'},
+cs:{n:'⑦ 帝王切開',sp:null,dr:['but','pro','alf','lidL','bpvL'],nt:'※元の資料にない内容のため院内で確認してください。母体と胎子への影響が少ない短時間作用の薬を選び、導入前に酸素化と術野の準備を済ませておく。鎮静薬の追加や強い鎮痛は胎子娩出後に行うのが一般的'},
+br:{n:'⑧ 短頭種・気道リスク',sp:null,dr:['but','bup','ace','mid','pro','alf','atr'],nt:'導入前に3〜5分の酸素化。すぐ挿管できる準備をしてから導入。抜管は気道反射が十分に戻ってから、できるだけ遅く。覚醒後も呼吸を監視'}};
+const PU={eph:'低血圧の改善（昇圧）',pdn:'抗炎症',dxm:'抗炎症・ショック',dex:'鎮静',mid:'鎮静・筋弛緩',but:'鎮痛・鎮静補助',bup:'鎮痛',ace:'鎮静',pro:'麻酔導入',alf:'麻酔導入',eto:'麻酔導入',ketI:'麻酔導入',fen:'術中鎮痛',ket:'術中鎮痛（補助）',lid:'術中鎮痛（補助）',lidL:'局所鎮痛',bpvL:'局所鎮痛（長時間）',ropL:'局所鎮痛（長時間）',atr:'前投薬（徐脈予防・分泌抑制）',ati:'鎮静の拮抗',amp:'感染予防',adn:'止血（毛細血管の強化）',con:'止血（抗線溶）',nsd:'術後鎮痛・抗炎症'};
+const MAC={'イソフルラン':{犬:1.3,猫:1.6},'セボフルラン':{犬:2.3,猫:2.6}};
+Object.values(PR).forEach(p=>['atr','amp','adn','con','eph','pdn','dxm'].forEach(i=>{if(!p.dr.includes(i))p.dr.push(i)}));
+const prf=k=>PR[k]||{n:'旧プロトコル（'+k+'）',dr:[],nt:''};
+const prFor=s=>Object.entries(PR).filter(([k,v])=>!v.sp||v.sp===s).map(([k,v])=>[k,v.n]);
+const FL=['ヴィーンF','リンゲル液','生理食塩液','ボルベン'];
+const PH=['導入','挿管','吸入開始','切皮','閉創','吸入停止','抜管'];
+const CHK=['麻酔深度（深すぎないか）','吸入濃度を下げられるか','心拍数（徐脈はないか）','体温','出血・循環血液量','心収縮力・不整脈'];
+const EM=[['epi',0.01,'心停止（低用量）'],['atr',0.05,'徐脈・心停止（心停止では1回のみ）'],['lid',2,'心室性不整脈・除細動不成功のVF','犬'],['ami',5,'除細動不成功のVF','猫'],['nal',0.04,'オピオイドの拮抗'],['flz',0.01,'ミダゾラムの拮抗'],['ati',0.1,'デクスメデトミジンの拮抗']];
+const emDose=id=>{const e=EM.find(x=>x[0]===id);return e?e[1]:null};
+const PREP=['アンビューバッグ','予備の気管チューブ（サイズ違い）','喉頭鏡・ライト','吸引','酸素・気化器の残量','モニターの装着（心電図・SpO₂・EtCO₂・血圧・体温）','輸液ポンプ・ライン','保温マット','緊急薬の量を確認（計画画面）'];
+const NORM=['洞調律','洞性徐脈','洞性頻脈'];
+const GD=[
+{k:'hrL',t:'徐脈',on:(v,r)=>v.hr!=null&&v.hr<r.hr[0],ck:['麻酔深度（深すぎないか）','デクスメデトミジンの影響','低体温','迷走神経の刺激（眼球・内臓の牽引）','血圧も下がっていないか','心電図（AVブロックなど）'],act:'血圧が保たれていれば経過観察。徐脈だけでアトロピンが必要とは限らない。低血圧を伴うときは原因に対応し、抗コリン薬や拮抗を検討',dr:['atr','ati']},
+{k:'hrH',t:'頻脈',on:(v,r)=>v.hr!=null&&v.hr>r.hr[1],ck:['麻酔が浅い・疼痛','低血圧・出血（循環血液量）','低酸素・高CO₂','高体温','不整脈'],act:'鎮痛の追加や麻酔深度の調整など、原因に対応',dr:['fen']},
+{k:'spo',t:'SpO₂の低下',on:v=>v.spo2!=null&&v.spo2<95,ck:['気管チューブの位置・閉塞・カフ','呼吸回路の外れ・リーク','酸素の流量・残量','換気（胸の動き）','プローブの装着・末梢循環'],act:'100%酸素で用手換気しながら原因を確認。90%未満は重篤な酸素化障害を疑い直ちに対応',dr:[]},
+{k:'etH',t:'EtCO₂の上昇（低換気）',on:(v,r)=>v.et!=null&&v.et>r.et[1],ck:['呼吸数・一回換気量','麻酔深度（深すぎないか）','回路・ソーダライム','気道の閉塞'],act:'補助換気・調節換気を検討。60 mmHgを超えたら重度の低換気',dr:[]},
+{k:'etL',t:'EtCO₂の低下',on:(v,r)=>v.et!=null&&v.et<r.et[0],ck:['過換気（人工呼吸の設定）','心拍出量の低下・低血圧','回路のリーク・サンプリング','チューブの位置'],act:'急に下がったときは心拍出量の低下や心停止も疑い、脈と血圧をすぐ確認',dr:[]},
+{k:'mapL',t:'低血圧',on:v=>v.map!=null&&v.map<65,ck:CHK,act:'輸液を増やす前に原因を確認。吸入濃度を下げられるか検討し、必要なら昇圧薬・強心薬（CRI）',dr:['eph'],cri:['dobC','dopC']},
+{k:'mapH',t:'高血圧',on:v=>v.map!=null&&v.map>100,ck:['麻酔が浅い・疼痛','高CO₂'],act:'鎮痛の追加・麻酔深度の調整',dr:['fen']},
+{k:'tmp',t:'低体温',on:v=>v.tmp!=null&&v.tmp<37.5,ck:['保温マット・温風','輸液の加温','洗浄液の温度','術野の露出時間'],act:'積極的に保温。35℃未満は全身評価',dr:[]},
+{k:'ecg',t:'不整脈',on:v=>v.ecg&&!NORM.includes(v.ecg),ck:['低酸素','高CO₂','疼痛・麻酔深度','電解質（K）','低血圧・出血','手術操作による心臓への刺激'],act:'まず原因を補正。持続する心室頻拍で循環が悪化するときは抗不整脈薬を検討（猫ではリドカインを犬と同じ感覚で使わない）',dr:['lid']}];
+const emLine=id=>{const d=D(id),e=EM.find(y=>y[0]===id);if(e&&e[3]&&e[3]!==S.c.sp)return `${d.n}（RECOVERでは${e[3]}で提案。${S.c.sp}では慎重に）`;const x=emDose(id)??(rng(d)?rng(d)[0]:null);if(x==null)return `${d.n}（量は院内で決定）`;const mg=toMg(d.u,x);return `${d.n} ${id==='ati'?'100 µg/kg':fmt(x)+' '+d.u+'/kg'} ＝ ${d.u==='µg'?fmt(mg*1000)+' µg':fmt(mg)+' mg'}／${fmt(mg/cc(d))} mL${id==='ati'?'（心肺蘇生時の量）':''}`};
+
+let S=ls.get(KEY),CO=ls.get(CK)||{};
+const norm=T=>{if(T&&T.ev)T.ev.forEach(e=>{if(e.ty==='ph'&&e.n==='執刀')e.n='切皮'});return T};norm(S);
+const D=id=>DR.find(d=>d.id===id);
+const cc=d=>{const v=+(CO[d.id]??d.c);return v>0?v:NaN};
+const sp=()=>S.c.sp;
+const rng=o=>sp()==='猫'?o.f:o.d;
+const toMg=(u,x)=>x*S.c.kg/(u==='µg'?1000:1);
+const lvl=(f,v)=>{if(v==null||isNaN(v))return '';if(f.red&&f.red(v))return 'r';const r=rng(f);if(!r)return '';return v<r[0]||v>r[1]?'y':''};
+const save=()=>ls.set(KEY,S);
+const toast=t=>{const e=$('#toast');e.textContent=t;e.hidden=false;clearTimeout(toast.h);toast.h=setTimeout(()=>e.hidden=true,2600)};
+const add=e=>{if(e.ty==='dr')markUsed(e.d);if(e.ty==='cri'&&e.act==='開始')markUsed(e.k);if(e.ty==='ph'&&e.n==='吸入開始')markUsed('inh');e.id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);e.t=e.t||Date.now();S.ev.push(e);S.ev.sort((a,b)=>a.t-b.t);if(!save())toast('この端末に保存できませんでした（容量不足の可能性）');render()};
+const phE=n=>S.ev.find(e=>e.ty==='ph'&&e.n===n);
+const vits=()=>S.ev.filter(e=>e.ty==='v');
+const fluState=()=>{const l=S.ev.filter(e=>e.ty==='flu').pop();return l&&l.act!=='停止'?l:null};
+const criState=id=>{const l=S.ev.filter(e=>e.ty==='cri'&&e.k===id).pop();return l&&l.act!=='停止'?l:null};
+
+function sheet(h,lock){$('#shc').innerHTML=h;$('#sh').hidden=false;$('#sh').dataset.lock=lock?1:'';$('#shc').scrollTop=0}
+const close=()=>{$('#sh').hidden=true};
+const gv=g=>{const c=$(`#shc [data-g="${g}"] .chip.on`);return c?c.dataset.v:''};
+$('#sh').addEventListener('click',e=>{if(e.target.id==='sh'&&!$('#sh').dataset.lock)close();if(e.target.closest('[data-x]'))close();const c=e.target.closest('.chip');if(c){const g=c.closest('[data-g]');if(g){if(g.dataset.multi)c.classList.toggle('on');else{g.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));c.classList.add('on')}}}});
+const chips=(g,arr,on,multi)=>`<div class="chips" data-g="${g}"${multi?' data-multi="1"':''}>${arr.map(a=>{const[v,l]=Array.isArray(a)?a:[a,a];return `<button type="button" class="chip${v===on?' on':''}" data-v="${esc(v)}">${esc(l)}</button>`}).join('')}</div>`;
+
+function openSetup(){
+sheet(`<h3>症例の登録</h3><p class="mut">手術の前に入力します。体重は量の計算に使います。</p>
+<label>カルテNo<input id="sNo" autocomplete="off" inputmode="numeric"></label>
+<label>患者・ペット名（漢字・ひらがな・カタカナ）<input id="sNm" autocomplete="off" placeholder="例：鈴木ラッキー"></label>
+<label>フリガナ（自動で入ります・直せます）<input id="sKn" autocomplete="off" placeholder="例：スズキラッキー"></label><p class="warn" id="knH"></p>
+<div class="lb">動物種</div>${chips('sp',['犬','猫'],'犬')}
+<label>体重（kg）<input id="sKg" type="number" inputmode="decimal" step="any"></label>
+<div class="lb">性別</div>${chips('sex',['♂','♂去勢','♀','♀避妊'],'')}
+<div class="f2"><label>品種<input id="sBr" autocomplete="off"></label><label>年齢<input id="sAge" autocomplete="off" placeholder="例：5歳3ヶ月"></label></div>
+<label>基礎疾患<input id="sDz" autocomplete="off" placeholder="なければ空欄"></label>
+<label>術式（手術名）<input id="sPr" autocomplete="off"></label>
+<div class="lb">ASA分類</div>${chips('asa',['I','II','III','IV','V'],'I')}
+<div class="lb">プロトコル</div><div id="prW">${chips('pr',prFor('犬'),'d1')}</div><p class="nt" id="prN">${PR.d1.nt}</p>
+<div class="lb">吸入麻酔薬</div>${chips('inh',['イソフルラン','セボフルラン'],'イソフルラン')}
+<label>麻酔担当<input id="sSt" autocomplete="off"></label>
+<p class="warn" id="sW"></p>
+<div class="acts">${H.length?'<button class="btn" id="sH">保存した症例を見る</button>':''}<button class="pri big" id="sGo">記録を始める</button></div>`,true);
+if($('#sH'))$('#sH').onclick=()=>{close();$('#tabs [data-v="hist"]').click()};
+const prN=()=>{$('#prN').textContent=prf(gv('pr')).nt};
+$('#shc [data-g="sp"]').addEventListener('click',()=>setTimeout(()=>{const s=gv('sp');$('#prW').innerHTML=chips('pr',prFor(s),s==='猫'?'c1':'d1');prN()}));
+$('#prW').addEventListener('click',()=>setTimeout(prN));
+const nm=$('#sNm'),kn=$('#sKn'),isKana=t=>/^[ぁ-ゖ゠-ヿ\s　]*$/.test(t);
+const YK='anes-yomi',YB=Object.fromEntries('生川ナルカワ,佐藤サトウ,鈴木スズキ,高橋タカハシ,田中タナカ,伊藤イトウ,渡辺ワタナベ,渡邊ワタナベ,渡邉ワタナベ,山本ヤマモト,中村ナカムラ,小林コバヤシ,加藤カトウ,吉田ヨシダ,山田ヤマダ,佐々木ササキ,山口ヤマグチ,松本マツモト,井上イノウエ,木村キムラ,林ハヤシ,斎藤サイトウ,斉藤サイトウ,齋藤サイトウ,清水シミズ,山崎ヤマザキ,森モリ,池田イケダ,橋本ハシモト,阿部アベ,石川イシカワ,山下ヤマシタ,中島ナカジマ,石井イシイ,小川オガワ,前田マエダ,岡田オカダ,長谷川ハセガワ,藤田フジタ,後藤ゴトウ,近藤コンドウ,村上ムラカミ,遠藤エンドウ,青木アオキ,坂本サカモト,福田フクダ,太田オオタ,西村ニシムラ,藤井フジイ,岡本オカモト,松田マツダ,中川ナカガワ,中野ナカノ,原田ハラダ,小野オノ,田村タムラ,竹内タケウチ,金子カネコ,和田ワダ,中山ナカヤマ,藤原フジワラ,石田イシダ,上田ウエダ,森田モリタ,原ハラ,柴田シバタ,酒井サカイ,工藤クドウ,横山ヨコヤマ,宮崎ミヤザキ,宮本ミヤモト,内田ウチダ,高木タカギ,安藤アンドウ,谷口タニグチ,大野オオノ,丸山マルヤマ,今井イマイ,高田タカダ,藤本フジモト,武田タケダ,村田ムラタ,上野ウエノ,杉山スギヤマ,増田マスダ,平野ヒラノ,大塚オオツカ,千葉チバ,久保クボ,松井マツイ,小島コジマ,岩崎イワサキ,桜井サクライ,野口ノグチ,松尾マツオ,野村ノムラ,木下キノシタ,菊地キクチ,菊池キクチ,佐野サノ,大西オオニシ,杉本スギモト,新井アライ,浜田ハマダ,菅原スガワラ,市川イチカワ,水野ミズノ,小松コマツ,島田シマダ,古川フルカワ,小山コヤマ,高野タカノ,西田ニシダ,山内ヤマウチ,西川ニシカワ,五十嵐イガラシ,北村キタムラ,安田ヤスダ,中田ナカタ,川口カワグチ,平田ヒラタ,川崎カワサキ,飯田イイダ,吉川ヨシカワ,本田ホンダ,久保田クボタ,沢田サワダ,辻ツジ,関セキ,吉村ヨシムラ,岩田イワタ,中西ナカニシ,服部ハットリ,樋口ヒグチ,福島フクシマ,川上カワカミ,永井ナガイ,松岡マツオカ,田口タグチ,山中ヤマナカ,森本モリモト,土屋ツチヤ,矢野ヤノ,広瀬ヒロセ,秋山アキヤマ,石原イシハラ,松下マツシタ,大橋オオハシ,松浦マツウラ,吉岡ヨシオカ,小池コイケ,馬場ババ,浅野アサノ,荒木アラキ,大久保オオクボ,野田ノダ,田辺タナベ,川村カワムラ,星野ホシノ,黒田クロダ,堀ホリ,尾崎オザキ,望月モチヅキ,永田ナガタ,熊谷クマガイ,内藤ナイトウ,松村マツムラ,西山ニシヤマ,大谷オオタニ,平井ヒライ,大島オオシマ,岩本イワモト,片山カタヤマ,本間ホンマ,早川ハヤカワ,横田ヨコタ,岡崎オカザキ,荒井アライ,大石オオイシ,成田ナリタ,宮田ミヤタ,小田オダ,石橋イシバシ,篠原シノハラ,須藤スドウ,小西コニシ,南ミナミ,高山タカヤマ,栗原クリハラ,伊東イトウ,松原マツバラ,三浦ミウラ,宮下ミヤシタ,水谷ミズタニ,服部ハットリ,伊藤イトウ,奥田オクダ,小田切オダギリ,稲垣イナガキ,浅井アサイ,森川モリカワ,堀田ホッタ'.split(',').map(x=>{const i=x.search(/[ァ-ヿ]/);return[x.slice(0,i),x.slice(i)]}));
+const yomi=t=>{const u=ls.get(YK)||{};return u[t]||YB[t]||null},hasK=t=>/[一-龯々〆ヵヶ]/.test(t);
+let segs=[],buf='',edited=false;
+const joinT=()=>segs.map(x=>x.t).join(''),syncK=()=>{if(edited)return;kn.value=kata(segs.map(x=>x.k).join(''));const inc=segs.some(x=>x.inc);kn.classList.toggle('y',inc);$('#knH').textContent=inc?'読みが途中までしか取れていない可能性があります。フリガナを確認してください（直した読みは次から自動で入ります）':''};
+const mkSeg=(t,b)=>{if(!hasK(t))return{t,k:t};const y=yomi(t);if(y)return{t,k:y};const m=t.match(/^([一-龯々〆ヵヶ]+)(.*)$/);if(m&&isKana(m[2])){const y2=yomi(m[1]);if(y2)return{t,k:y2+m[2]}}const k=b||'';return{t,k,inc:k.length<[...t].length}};
+nm.addEventListener('compositionstart',()=>{buf=''});
+nm.addEventListener('compositionupdate',e=>{if(e.data&&isKana(e.data))buf=e.data});
+nm.addEventListener('compositionend',e=>{const d=e.data||'';if(d){segs.push(isKana(d)?{t:d,k:d}:mkSeg(d,buf))}buf='';setTimeout(rebuild)});
+function rebuild(){const v=nm.value;if(!v){segs=[];edited=false;kn.value='';return}
+const j=joinT();if(v===j){syncK();return}
+if(v.startsWith(j)){const rest=v.slice(j.length);if(isKana(rest)){segs.push({t:rest,k:rest});syncK();return}}
+let acc='',keep=[];for(const x of segs){if(v.startsWith(acc+x.t)){acc+=x.t;keep.push(x)}else break}segs=keep;const rest=v.slice(acc.length);if(rest)segs.push(isKana(rest)?{t:rest,k:rest}:mkSeg(rest,''));syncK()}
+nm.addEventListener('input',e=>{if(!e.isComposing)rebuild()});
+kn.addEventListener('input',()=>{edited=!!kn.value;kn.classList.remove('y');$('#knH').textContent=''});
+kn.addEventListener('blur',()=>kn.value=kata(kn.value));
+$('#sGo').onclick=()=>{const kg=parseFloat($('#sKg').value),raw=nm.value.trim();let name=kata(kn.value.trim());if(!name&&raw&&isKana(raw))name=kata(raw);kn.value=name;
+if(raw&&name&&hasK(raw)&&/^[゠-ヿ\s　]+$/.test(name)){const u=ls.get(YK)||{},m=raw.match(/^([一-龯々〆ヵヶ]+)([ぁ-ゖ゠-ヿ]*)$/);if(m&&name.endsWith(kata(m[2]))&&name.length>m[2].length)u[m[1]]=name.slice(0,name.length-m[2].length);else u[raw]=name;ls.set(YK,u)}
+if(raw&&!name){$('#sW').textContent='フリガナを入力してください（カタカナで表示します）';return}
+if(name&&!/^[゠-ヿ\s　]+$/.test(name)){$('#sW').textContent='フリガナはカタカナで入力してください';return}
+if(!(kg>0)){$('#sW').textContent='体重を入力してください';return}
+S={c:{dz:$('#sDz').value.trim(),sex:gv('sex'),breed:$('#sBr').value.trim(),age:$('#sAge').value.trim(),no:$('#sNo').value.trim(),name,kanji:raw&&raw!==name?raw:'',sp:gv('sp'),kg,proc:$('#sPr').value.trim(),asa:gv('asa'),pr:gv('pr'),inh:gv('inh'),staff:$('#sSt').value.trim(),t0:Date.now()},ev:[]};
+save();close();render();$('#tabs [data-v="plan"]').click()}}
+
+function openDrug(id){
+const d=D(id),rg=rng(d),uk=d.u+'/kg',pre=rg&&!d.mx?rg[0]:'',co=cc(d);
+const cum=d.mx?S.ev.filter(e=>e.ty==='dr'&&e.d===id).reduce((a,e)=>a+e.mg,0):0;
+sheet(`<h3>${d.n}</h3><p class="mut">${d.g}・濃度 ${fmt(co)} mg/mL・体重 ${S.c.kg} kg</p>
+<p class="ref">${rg?(d.mx?`最大推奨量 ${rg[1]} ${uk}（この薬の使用済み ${fmt(cum/S.c.kg)} mg/kg）`:`参考用量 ${rs(rg)} ${uk}`):(sp()==='猫'&&d.d?'猫では参考用量の設定なし':'参考用量の設定なし（量を入力）')}</p>
+${d.nt?`<p class="nt">${d.nt}</p>`:''}
+<div class="f2"><label>用量（${uk}）<input id="dx" type="number" inputmode="decimal" step="any" value="${pre}"></label><label>液量（mL）<input id="dm" type="number" inputmode="decimal" step="any"></label></div>
+<p class="calc" id="dc"></p><p class="warn" id="dw"></p>
+<div class="lb">投与経路</div>${chips('rt',d.r,d.r[0])}
+<div class="acts"><button class="btn" data-x>やめる</button><button class="pri" id="dok">記録する</button></div>`);
+const upd=from=>{let x=parseFloat($('#dx').value),ml=parseFloat($('#dm').value),mg;
+if(from==='m'){mg=ml*co;x=mg/S.c.kg*(d.u==='µg'?1000:1);$('#dx').value=isNaN(x)?'':fmt(x)}else{mg=toMg(d.u,x);$('#dm').value=isNaN(mg)?'':fmt(mg/co)}
+$('#dc').textContent=isNaN(mg)?'':`= ${d.u==='µg'?fmt(mg*1000)+' µg（'+fmt(mg)+' mg）':fmt(mg)+' mg'}`;
+let w='';if(rg&&!isNaN(x)){if(d.mx){if((cum+mg)/S.c.kg>rg[1])w='最大推奨量を超えます'}else if(x<rg[0]||x>rg[1])w='参考用量の範囲外です'}$('#dw').textContent=w;return{x,mg}};
+$('#dx').oninput=()=>upd('x');$('#dm').oninput=()=>upd('m');upd('x');
+$('#dok').onclick=()=>{const{x,mg}=upd('x');if(!(x>0)){$('#dw').textContent='量を入力してください';return}add({ty:'dr',d:id,x,mg,ml:mg/co,r:gv('rt')});close();toast(d.n+'を記録しました')}}
+
+function seed(f){if(f.k==='tv')return Math.round(S.c.kg*10)||50;if(f.k==='inh'||f.k==='exi')return S.c.inh==='イソフルラン'?1.5:2.5;const r=rng(f);return r?Math.round((r[0]+r[1])/2/f.st)*f.st:0}
+function openV(){
+const lv=vits().pop(),p=lv?lv.v:{};
+sheet(`<h3>バイタルを記録</h3><p class="mut">前回の値が入っています。変わったところだけ直してください。</p>
+${VF.map(f=>`<div class="vr"><span class="vl">${f.n}<small>${f.u}</small></span><button type="button" class="st" data-k="${f.k}" data-s="-1" aria-label="${f.n}を下げる">−</button><input id="v_${f.k}" data-k="${f.k}" type="number" inputmode="decimal" step="any" value="${p[f.k]??''}"><button type="button" class="st" data-k="${f.k}" data-s="1" aria-label="${f.n}を上げる">＋</button></div>`).join('')}
+<div class="lb">呼吸</div>${chips('vent',['自発','ベンチ'],p.vent||'自発')}
+${whenHTML('測定した時刻')}
+<div class="lb">心電図のリズム</div>${chips('ecg',ECG,p.ecg||'洞調律')}
+<div class="acts"><button type="button" class="btn rb" id="vRb"></button><button class="btn" data-x>やめる</button><button class="pri big" id="vok">記録する</button></div>`);
+whenBind();rbUI();$('#vRb').onclick=()=>{rbOn=!rbOn;ls.set(RK,rbOn);rbUI()};
+const col=k=>{const f=VF.find(v=>v.k===k),i=$('#v_'+k);i.className=lvl(f,parseFloat(i.value))};
+VF.forEach(f=>col(f.k));
+$$('#shc .vr input').forEach(i=>i.oninput=()=>col(i.dataset.k));
+$$('#shc .st').forEach(b=>b.onclick=()=>{const f=VF.find(v=>v.k===b.dataset.k),i=$('#v_'+f.k),c=parseFloat(i.value);const n=isNaN(c)?seed(f):c+f.st*b.dataset.s;i.value=+n.toFixed(f.st<1?1:0);col(f.k)});
+$('#vok').onclick=()=>{const v={};VF.forEach(f=>{const x=parseFloat($('#v_'+f.k).value);if(!isNaN(x))v[f.k]=x});v.ecg=gv('ecg');v.vent=gv('vent');
+if(Object.keys(v).length<3){toast('値を入力してください');return}
+add({ty:'v',v,t:whenT()});close();readV(v);openGuide(v)}}
+
+function openGuide(v,keys){
+const r={hr:rng(VF[0]),et:rng(VF.find(x=>x.k==='et'))},gs=keys?GD.filter(g=>keys.includes(g.k)):GD.filter(g=>g.on(v,r));if(!gs.length)return;
+sheet(`<h3>異常時の確認</h3><p class="mut">確認したものにチェックしてください。対応したことは記録に残ります。</p>
+${gs.map(g=>`<div class="gd"><h4>${g.t}</h4>${chips('ck_'+g.k,g.ck,'',true)}<p class="nt">${g.act}</p>${(g.dr.length||g.cri)?`<p class="gl">準備する薬（この症例の量）</p><ul class="eml">${g.dr.map(id=>`<li>${emLine(id)}</li>`).join('')}${(g.cri||[]).map(id=>{const x=CR.find(y=>y.id===id),q=rng(x);return `<li>${x.n} CRI ${x.st?'開始量 ':''}${rs(q)} ${cu(x)}（${rr2(cml(x,q[0]),cml(x,q[1]))} mL/h）</li>`}).join('')}</ul>`:''}</div>`).join('')}
+<label>対応メモ<textarea id="ckN" rows="2"></textarea></label>
+<div class="acts"><button class="btn" data-x>あとで</button><button class="pri" id="ckOk">記録する</button></div>`);
+$('#ckOk').onclick=()=>{const it=gs.flatMap(g=>$$(`#shc [data-g="ck_${g.k}"] .chip.on`).map(c=>c.dataset.v));add({ty:'chk',g:gs.map(g=>g.t),it,tx:$('#ckN').value.trim()});close()}}
+function openEm(){const P=prf(S.c.pr),pre=['hr','br'].includes(S.c.pr);
+sheet(`<h3>緊急薬（${S.c.sp} ${S.c.kg} kg）</h3>${pre?'<p class="nt">このプロトコルでは、導入前に緊急薬をシリンジに準備しておきます。</p>':''}${emTable()}
+<p class="mut">量はRECOVER 2024（犬猫の心肺蘇生ガイドライン）の薬用量表によるものです。濃度は「設定」で確認してください。</p>
+<div class="gl">異常時ガイドを開く</div><div class="chips">${GD.map(g=>`<button type="button" class="chip" data-gk="${g.k}">${g.t}</button>`).join('')}</div>
+<div class="acts"><button class="btn" data-x>閉じる</button></div>`);
+$$('#shc [data-gk]').forEach(b=>b.onclick=()=>openGuide(null,[b.dataset.gk]))}
+const emTable=()=>`<div class="scroll"><table class="plan"><thead><tr><th>薬剤</th><th>用途</th><th class="n">薬用量</th><th class="n">この症例の量（${S.c.kg} kg）</th></tr></thead><tbody>${EM.filter(e=>!e[3]||e[3]===S.c.sp).map(([id,x,use])=>{const d=D(id),mg=toMg(d.u,x);return `<tr><td>${d.n}</td><td>${use}</td><td class="n">${id==='ati'?'100 µg/kg':fmt(x)+' mg/kg'}</td><td class="n">${fmt(mg)} mg／${fmt(mg/cc(d))} mL</td></tr>`}).join('')}</tbody></table></div>`;
+const WH=[['0','今'],['2','2分前'],['5','5分前'],['10','10分前'],['at','時刻を指定']];
+const whenHTML=(lab='記録する時刻')=>`<div class="lb">${lab}</div>${chips('wh',WH,'0')}<input type="time" id="whT" class="wht" hidden value="${hm(Date.now())}">`;
+const atTime=(v,ref)=>{const[h,m]=v.split(':').map(Number);if(isNaN(h)||isNaN(m))return null;const d=new Date(ref);d.setHours(h,m,0,0);let t=d.getTime();if(t-ref>12*3600000)t-=86400000;if(ref-t>12*3600000)t+=86400000;return t};
+const whenT=()=>{const g=gv('wh')||'0';if(g==='at'){const t=atTime($('#whT').value,Date.now());return t&&t<=Date.now()+60000?t:Date.now()}return Date.now()-(+g)*60000};
+const whenBind=()=>{const g=$('#shc [data-g="wh"]');if(g)g.addEventListener('click',()=>setTimeout(()=>{$('#whT').hidden=gv('wh')!=='at'}))};
+function openWhen(n){sheet(`<h3>${n}</h3>${whenHTML()}<div class="acts"><button class="btn" data-x>やめる</button><button class="pri" id="whOk">${n}を記録</button></div>`);whenBind();$('#whOk').onclick=()=>{add({ty:'ph',n,t:whenT()});close()}}
+function openEdit(id){const e=S.ev.find(x=>x.id===id);if(!e)return;
+sheet(`<h3>時刻を修正</h3><p class="mut">${esc(txt(e))}</p><label>時刻<input type="time" id="edT" value="${hm(e.t)}"></label><div class="chips"><button type="button" class="chip" data-m="-5">−5分</button><button type="button" class="chip" data-m="-1">−1分</button><button type="button" class="chip" data-m="1">＋1分</button><button type="button" class="chip" data-m="5">＋5分</button></div>
+<div class="acts"><button class="btn" data-x>やめる</button><button class="pri" id="edOk">修正する</button></div>`);
+$$('#shc [data-m]').forEach(b=>b.onclick=()=>{const t=atTime($('#edT').value,e.t);if(t!=null)$('#edT').value=hm(t+(+b.dataset.m)*60000)});
+$('#edOk').onclick=()=>{const t=atTime($('#edT').value,e.t);if(t==null)return;if(t!==e.t){e.t=t;e.ed=1;S.ev.sort((a,b)=>a.t-b.t);save()}close();render();toast('時刻を修正しました')}}
+function openPrep(){const pre=['hr','br'].includes(S.c.pr),items=pre?[...PREP,'緊急薬をシリンジに準備']:PREP;
+sheet(`<h3>導入前の確認</h3><p class="mut">確認したものにチェックしてから導入してください。</p>${chips('prep',items,'',true)}${whenHTML('導入の時刻')}<p class="warn" id="prW"></p>
+<div class="acts"><button class="btn" data-x>やめる</button><button class="btn" id="prSkip">このまま導入</button><button class="pri" id="prOk">確認して導入</button></div>`);
+whenBind();const go=()=>{const t=whenT(),it=$$('#shc [data-g="prep"] .chip.on').map(c=>c.dataset.v);add({ty:'prep',it,ng:items.filter(x=>!it.includes(x)),t:t-1});add({ty:'ph',n:'導入',t});close()};
+$('#prOk').onclick=()=>{const n=items.length-$$('#shc [data-g="prep"] .chip.on').length;if(n){$('#prW').textContent=`未確認が${n}項目あります。確認するか「このまま導入」を押してください`;return}go()};
+$('#prSkip').onclick=go}
+
+function openCri(id){
+const c=CR.find(x=>x.id===id),d=D(c.dr),rg=rng(c),cur=criState(id),uk=cu(c);
+sheet(`<h3>${c.n} CRI</h3><p class="mut">濃度 ${fmt(cc(d))} mg/mL・体重 ${S.c.kg} kg</p>
+<p class="ref">${rg?(c.st?`開始量 ${rs(rg)} ${uk}`:`参考 ${rs(rg)} ${uk}`):'猫では参考値の設定なし'}</p>${c.nt?`<p class="nt">${c.nt}</p>`:''}
+<label>速度（${uk}）<input id="cx" type="number" inputmode="decimal" step="any" value="${cur?cur.x:(rg?rg[0]:'')}"></label>
+<p class="calc" id="cc"></p><p class="warn" id="cw"></p>
+<div class="acts"><button class="btn" data-x>やめる</button><button class="pri" id="cok">${cur?'速度を変更':'開始'}</button></div>`);
+const upd=()=>{const x=parseFloat($('#cx').value),mlh=cml(c,x);$('#cc').textContent=isNaN(mlh)?'':`= ${fmt(mlh)} mL/h（濃度 ${fmt(cc(d))} mg/mL で計算）`;$('#cw').textContent=rg&&!c.st&&(x<rg[0]||x>rg[1])?'参考範囲外です':'';return{x,mlh}};
+$('#cx').oninput=upd;upd();
+$('#cok').onclick=()=>{const{x,mlh}=upd();if(!(x>0))return;add({ty:'cri',k:id,act:cur?'変更':'開始',x,mlh});close()}}
+
+function openNote(){
+sheet(`<h3>メモ</h3>${chips('nq',['体動','出血','嘔吐・逆流','喉頭痙攣','保温開始','人工呼吸開始','挿管チューブ調整'],'')}
+<label>内容<textarea id="nT" rows="3"></textarea></label>
+<div class="acts"><button class="btn" data-x>やめる</button><button class="pri" id="nOk">記録する</button></div>`);
+$$('#shc [data-g="nq"] .chip').forEach(c=>c.addEventListener('click',()=>{const t=$('#nT');t.value=(t.value?t.value+'、':'')+c.dataset.v}));
+$('#nOk').onclick=()=>{const t=$('#nT').value.trim();if(!t)return;add({ty:'note',tx:t});close()}}
+
+const txt=e=>txt0(e)+(e.ed?'（時刻修正）':'');
+function txt0(e){
+if(e.ty==='ph')return '● '+e.n;
+if(e.ty==='dr'){const d=D(e.d);return `${d.n} ${fmt(e.x)} ${d.u}/kg = ${d.u==='µg'?fmt(e.mg*1000)+' µg':fmt(e.mg)+' mg'}／${fmt(e.ml)} mL ${e.r}`}
+if(e.ty==='v')return 'バイタル：'+VF.filter(f=>e.v[f.k]!=null).map(f=>f.n+' '+e.v[f.k]).join('、')+(e.v.ecg?'、'+e.v.ecg:'');
+if(e.ty==='cri'){const c=CR.find(x=>x.id===e.k);return `${c.n} CRI ${e.act}`+(e.act!=='停止'?` ${fmt(e.x)} ${cu(c)}（${fmt(e.mlh)} mL/h）`:'')}
+if(e.ty==='flu')return `輸液 ${e.kind} ${e.act}`+(e.act!=='停止'?` ${fmt(e.x)} mL/kg/h（${fmt(e.mlh)} mL/h）`:'');
+if(e.ty==='img')return '写真'+(e.tx?'：'+e.tx:'');
+if(e.ty==='chk')return (e.g?`異常時の確認（${e.g.join('・')}）：`:`低血圧チェック（MAP ${e.m}）：`)+(e.it.join('、')||'なし')+(e.tx?'／'+e.tx:'');
+if(e.ty==='prep')return `導入前の確認：${e.it.length}/${e.it.length+e.ng.length}項目`+(e.ng.length?'（未確認：'+e.ng.join('、')+'）':'');
+return 'メモ：'+e.tx}
+
+function render(){
+if(!S){$('#pt').textContent='症例未登録';openSetup();return}
+const c=S.c;
+$('#pt').innerHTML=`<span class="no">カルテNo ${esc(c.no||c.id||'未入力')}</span><span class="nm">${esc(c.name||'患者・ペット名なし')}</span>${c.sp} ${c.kg} kg・ASA ${c.asa}<small>${esc(c.proc||'術式未入力')}／プロトコル ${prf(c.pr).n}</small>`;
+$('#ph').innerHTML=PH.map(n=>{const e=phE(n);return `<button data-p="${n}" class="${e?'done':''}">${n}<small>${e?hm(e.t):'—'}</small></button>`}).join('');
+const lv=vits().pop();
+$('#last').innerHTML=VF.map(f=>{const v=lv?lv.v[f.k]:null;return `<div class="cell ${lvl(f,v)}"><span>${f.n}</span><b>${v??'—'}</b><i>${f.u}</i></div>`}).join('')+`<div class="cell ${lv&&lv.v.ecg&&lv.v.ecg!=='洞調律'?'y':''}"><span>心電図</span><b style="font-size:17px">${lv?esc(lv.v.ecg||'—'):'—'}</b><i>${lv?hm(lv.t)+' 記録':''}</i></div>`;
+const GO2=['前投薬','導入','術中鎮痛','局所麻酔','抗生剤','止血剤','昇圧薬','ステロイド','その他','緊急薬'],own=used().filter(k=>D(k)&&!D(k).cr).sort((x,y)=>GO2.indexOf(D(x).g)-GO2.indexOf(D(y).g)),btn=d=>{const r=rng(d),co=cc(d);let t='量を入力';if(r){if(d.mx){const m=toMg(d.u,r[1]);t=`最大 ${r[1]} ${d.u}/kg<br>${d.u==='µg'?fmt(m*1000)+' µg':fmt(m)+' mg'}／${fmt(m/co)} mL`}else{const a=toMg(d.u,r[0]),b=toMg(d.u,r[1]);t=`${rs(r)} ${d.u}/kg<br>${d.u==='µg'?rr2(a*1000,b*1000)+' µg':rr2(a,b)+' mg'}／${rr2(a/co,b/co)} mL`}}return `<button data-d="${d.id}"><b>${d.n}</b><small>${t}</small></button>`};
+const groups=[...new Set(DR.filter(d=>!d.cr).map(d=>d.g))];
+$('#dr').innerHTML=(prf(c.pr).nt?`<p class="nt">${prf(c.pr).nt}</p>`:'')+(own.length?`<div class="gl">計画でチェックした薬</div>`:'<p class="mut">「計画」でチェックした薬がここに出ます。チェックしていない薬は下の「すべての薬」から使えます。</p>')+(own.length?`<div class="dg">${own.map(i=>btn(D(i))).join('')}</div>`:'')+`<details${own.length?'':' open'}><summary>すべての薬</summary>${groups.map(g=>`<div class="gl">${g}</div><div class="dg">${DR.filter(d=>d.g===g&&!d.cr).map(btn).join('')}</div>`).join('')}</details>`;
+$('#inf').innerHTML=`<div>${[['年齢',c.age],['基礎疾患',c.dz||'なし'],['気管チューブ',c.tube],['血圧カフ',c.cuff]].map(([l,v])=>`<span><i>${l}</i>${esc(v||'—')}</span>`).join('')}</div><button class="btn" data-inf>患者情報を編集</button>`;
+{const f=fluState(),l=S.ev.filter(e=>e.ty==='flu').pop();$('#flu').innerHTML=`<div class="cr${f?' on':''}"><div><b>${f?esc(f.kind):esc(S.c.fluid||'点滴')}</b><span style="display:block;font-weight:700;color:${f?'var(--pri)':'var(--mut)'}">${f?`${fmt(f.x)} mL/kg/h・${fmt(f.mlh)} mL/h（${hm(f.t)}〜）`:(l?'停止中':'未開始')}</span></div><div class="row" style="margin:0"><button class="btn" data-fl>${f?'変更':'開始'}</button>${f?'<button class="btn" data-fs>停止</button>':''}</div></div>`}
+const crOn=CR.filter(x=>(!x.off&&used().includes(x.id))||criState(x.id)),crOff=CR.filter(x=>!x.off&&!crOn.includes(x));
+const crCard=x=>{const s=criState(x.id),r=rng(x);return `<div class="cr${s?' on':''}"><div><b>${x.n}</b><span>${r?`${x.st?'開始量 ':'参考 '}${rs(r)} ${cu(x)}（${rr2(cml(x,r[0]),cml(x,r[1]))} mL/h）`:'猫では参考値なし'}</span><span style="display:block;font-weight:700;color:${s?'var(--pri)':'var(--mut)'}">${s?`投与中 ${fmt(s.x)} ${cu(x)}・${fmt(s.mlh)} mL/h（${hm(s.t)}〜）`:'停止中'}</span></div><div class="row" style="margin:0"><button class="btn" data-c="${x.id}">${s?'速度変更':'開始'}</button>${s?`<button class="btn" data-cs="${x.id}">停止</button>`:''}</div></div>`};
+$('#cri').innerHTML=(crOn.length?crOn.map(crCard).join(''):'<p class="mut">「計画」でチェックしたCRIがここに出ます。</p>')+(crOff.length?`<details><summary>その他のCRI</summary>${crOff.map(crCard).join('')}</details>`:'');
+$('#log').innerHTML=S.ev.filter(e=>e.ty!=='v').reverse().map(e=>`<li><button class="tbtn" data-et="${e.id}" aria-label="時刻を修正">${hm(e.t)}</button><div>${esc(txt(e))}${e.ty==='img'?`<img src="${e.src}" alt="記録した写真">`:''}</div><button class="del" data-del="${e.id}" aria-label="削除">×</button></li>`).join('')||'<li><span></span><span class="mut">まだ記録はありません</span></li>';
+draw();tick();if(!$('#v-sum').hidden)sum();if(!$('#v-plan').hidden)planv()}
+
+const ABB={'イソフルラン':'ISO','セボフルラン':'SEVO'};
+const PHA={'導入':'導','挿管':'挿','吸入開始':'吸','切皮':'切','閉創':'閉','吸入停止':'停','抜管':'抜'};
+const SER=[['hr','心拍数','○','#d97706'],['map','平均血圧','△','#2563eb'],['et','EtCO₂','◇','#16a34a']];
+const LEG='<div class="leg">'+SER.map(([k,n,m,c])=>`<span style="color:${c};font-weight:700">${m}━ ${n}</span>`).join('')+'<span class="mut">点線＝正常範囲　赤丸・↑↓＝範囲外　導 導入・挿 挿管・吸 吸入開始・切 切皮・閉 閉創・停 吸入停止・抜 抜管</span></div>';
+let ZM=1;
+function paperSvg(live,split,z){
+const c=S.c,ev=S.ev,vs=ev.filter(e=>e.ty==='v'),ab=ABB[c.inh]||'ISO',M=300000;
+const st=(phE('導入')||ev[0]||{t:c.t0}).t,first=Math.min(st,vs.length?vs[0].t:st),t0=Math.floor(first/M)*M;
+const ext=phE('抜管'),lastT=ev.length?ev[ev.length-1].t:c.t0,endT=live&&!ext?Date.now():(ext?ext.t:lastT);
+const cw=28*(z||1),cols=Math.max(Math.ceil(24/(z||1)),Math.ceil((endT-t0)/M)+2),L=86,TH=16,EH=18,G0=TH+EH+6,GH=320,RH=22,rows=[[ab+'ダイヤル','inh'],['Ex'+ab,'exi'],['呼吸数','rr'],['換気','vent'],['一回換気量','tv'],['SpO₂','spo2'],['体温','tmp']];
+const W=L+cols*cw+8,H=G0+GH+10+rows.length*RH+2,X=t=>L+(t-t0)/M*cw,Y=v=>G0+GH-Math.max(0,Math.min(200,v))/200*GH,step=cw>=40?1:cw>=20?3:6;
+let o=`<rect x="0" y="0" width="${W}" height="${H}" fill="var(--bg)"/>`;
+for(let i=0;i<cols;i+=step)o+=`<text x="${L+i*cw+2}" y="12" font-size="10" fill="var(--ink)">${hm(t0+i*M)}</text>`;
+const slot={};ev.filter(e=>e.ty==='ph').forEach(e=>{const k=Math.floor((e.t-t0)/M);(slot[k]=slot[k]||[]).push(PHA[e.n]||e.n[0]);o+=`<line x1="${X(e.t)}" x2="${X(e.t)}" y1="${G0}" y2="${G0+GH}" stroke="var(--pri)" stroke-dasharray="3 3"/>`});
+Object.entries(slot).forEach(([k,a])=>{const m=a.length*11>cw;o+=`<text x="${m?L+ +k*cw+1:L+(+k+.5)*cw}" y="${TH+13}" font-size="${m?9.5:11}" font-weight="700" text-anchor="${m?'start':'middle'}" fill="var(--pri)">${a.join('')}</text>`});
+for(let i=0;i<=cols;i++)o+=`<line x1="${L+i*cw}" x2="${L+i*cw}" y1="${G0}" y2="${G0+GH}" stroke="var(--ink)" stroke-opacity="${i%3?.15:.4}"/>`;
+for(let v=0;v<=200;v+=20)o+=`<line x1="${L}" x2="${L+cols*cw}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--ink)" stroke-opacity=".4"/><text x="${L-6}" y="${Y(v)+4}" font-size="11" text-anchor="end" fill="var(--ink)">${v}</text>`;
+o+=`<text x="${L-6}" y="12" font-size="10" text-anchor="end" fill="var(--mut)">時間</text>`;
+const F=k=>VF.find(x=>x.k===k),fs=Math.min(10.5,cw/2.4);
+SER.forEach(([k,n,m,col])=>{const rg=rng(F(k));if(rg)rg.forEach(b=>{o+=`<line x1="${L}" x2="${L+cols*cw}" y1="${Y(b)}" y2="${Y(b)}" stroke="${col}" stroke-width="1.2" stroke-dasharray="6 4" opacity=".55"/>`})});
+SER.forEach(([k,n,m,col],si)=>{const pts=vs.filter(e=>e.v[k]!=null).map(e=>[X(e.t),Y(e.v[k]),e.v[k]]);
+if(pts.length>1)o+=`<polyline fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" points="${pts.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ')}"/>`;
+pts.forEach(([x,y,v])=>{const bad=lvl(F(k),v),rg=rng(F(k)),dir=bad?(rg&&v>rg[1]?'↑':'↓'):'';
+if(bad)o+=`<circle cx="${x}" cy="${y}" r="10" fill="#d62828" fill-opacity=".15" stroke="#d62828" stroke-width="1.5"/>`;
+o+=k==='hr'?`<circle cx="${x}" cy="${y}" r="4.5" fill="var(--bg)" stroke="${col}" stroke-width="2"/>`:k==='map'?`<path d="M${x} ${y-5.5}L${x+5} ${y+3.5}L${x-5} ${y+3.5}Z" fill="var(--bg)" stroke="${col}" stroke-width="2"/>`:`<path d="M${x} ${y-5.5}L${x+5} ${y}L${x} ${y+5.5}L${x-5} ${y}Z" fill="var(--bg)" stroke="${col}" stroke-width="2"/>`;
+o+=`<text x="${x}" y="${k==='hr'?y-9:y+17}" font-size="${fs}" font-weight="700" text-anchor="middle" fill="${bad?'#d62828':col}" paint-order="stroke" stroke="var(--bg)" stroke-width="3">${dir}${v}</text>`})});
+const R0=G0+GH+10;
+rows.forEach(([n,k],r)=>{const y=R0+r*RH;o+=`<rect x="${L}" y="${y}" width="${cols*cw}" height="${RH}" fill="none" stroke="var(--ink)" stroke-opacity=".5"/><text x="${L-6}" y="${y+15}" font-size="11" text-anchor="end" fill="var(--ink)">${n}</text>`;
+for(let i=1;i<cols;i++)o+=`<line x1="${L+i*cw}" x2="${L+i*cw}" y1="${y}" y2="${y+RH}" stroke="var(--ink)" stroke-opacity="${i%3?.2:.45}"/>`;
+const by={};vs.forEach(e=>{if(e.v[k]!=null&&e.v[k]!=='')by[Math.floor((e.t-t0)/M)]=e.v[k]});
+Object.entries(by).forEach(([i,v])=>{const f=F(k),t=k==='vent'?(v==='ベンチ'?'ベ':'自'):v;o+=`<text x="${L+(+i+.5)*cw}" y="${y+15}" font-size="${fs}" text-anchor="middle" font-weight="${k==='vent'&&v==='ベンチ'?700:400}" fill="${f&&lvl(f,v)?'#d62828':'var(--ink)'}">${t}</text>`})});
+if(split)return `<div class="pgrid"><svg class="paper" viewBox="0 0 ${L} ${H}" width="${L}" height="${H}" aria-hidden="true">${o}</svg><div class="pr"><svg class="paper" viewBox="${L} 0 ${W-L} ${H}" width="${W-L}" height="${H}" role="img" aria-label="麻酔記録のグラフ">${o}</svg></div></div>`;
+return `<svg class="paper" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="麻酔記録のグラフ">${o}</svg>`}
+function draw(){const w=$('#paperW');if(!w||!S)return;const o=w.querySelector('.pr'),prev=o?o.scrollLeft:0,ratio=o&&o.scrollWidth>o.clientWidth?(o.scrollLeft+o.clientWidth/2)/o.scrollWidth:1,at=!o||o.scrollLeft+o.clientWidth>=o.scrollWidth-40;
+w.innerHTML=`<div class="zrow">${LEG}<div class="zb"><button class="btn" data-z="-1" aria-label="時間軸を縮める">－</button><span>${Math.round(ZM*100)}%</span><button class="btn" data-z="1" aria-label="時間軸を広げる">＋</button></div></div>`+paperSvg(true,true,ZM);
+const sc=w.querySelector('.pr');if(draw.keep){sc.scrollLeft=draw.keep*sc.scrollWidth-sc.clientWidth/2;draw.keep=0}else sc.scrollLeft=at?sc.scrollWidth:prev}
+const setZ=(z,anchor)=>{const o=$('#paperW .pr');draw.keep=anchor??(o?(o.scrollLeft+o.clientWidth/2)/o.scrollWidth:1);ZM=Math.max(.8,Math.min(3,z));draw()};
+$('#paperW').addEventListener('click',e=>{const b=e.target.closest('[data-z]');if(b)setZ(ZM*(b.dataset.z>0?1.4:1/1.4))});
+{let p0=null;const dist=t=>Math.hypot(t[0].clientX-t[1].clientX,t[0].clientY-t[1].clientY);
+$('#paperW').addEventListener('touchstart',e=>{if(e.touches.length===2&&e.target.closest('.pr')){const o=$('#paperW .pr'),r=o.getBoundingClientRect(),mx=(e.touches[0].clientX+e.touches[1].clientX)/2-r.left;p0={d:dist(e.touches),z:ZM,anchor:(o.scrollLeft+mx)/o.scrollWidth,mx,sv:o.querySelector('svg')};p0.sv.style.transformOrigin=`${o.scrollLeft+mx}px 0`}},{passive:true});
+$('#paperW').addEventListener('touchmove',e=>{if(!p0||e.touches.length!==2)return;e.preventDefault();const k=Math.max(.8,Math.min(3,p0.z*dist(e.touches)/p0.d))/p0.z;p0.k=k;p0.sv.style.transform=`scaleX(${k})`},{passive:false});
+$('#paperW').addEventListener('touchend',e=>{if(!p0||e.touches.length>1)return;const q=p0;p0=null;if(q.k){const o=$('#paperW .pr');ZM=Math.max(.8,Math.min(3,q.z*q.k));draw();const n=$('#paperW .pr');n.scrollLeft=q.anchor*n.scrollWidth-q.mx}})}
+function openFlu(){const cur=fluState(),def=sp()==='猫'?3:5;
+sheet(`<h3>輸液</h3><div class="lb">点滴の種類</div>${chips('fk',FL,cur?cur.kind:(S.c.fluid||FL[0]))}
+<label>速度（mL/kg/h）<input id="fx" type="number" inputmode="decimal" step="any" value="${cur?cur.x:def}"></label><p class="calc" id="fc"></p>
+<div class="acts"><button class="btn" data-x>やめる</button><button class="pri" id="fok">${cur?'変更を記録':'開始を記録'}</button></div>`);
+const upd=()=>{const x=parseFloat($('#fx').value),m=x*S.c.kg;$('#fc').textContent=isNaN(m)?'':`= ${fmt(m)} mL/h（${S.c.kg} kg）`;return{x,m}};$('#fx').oninput=upd;upd();
+$('#fok').onclick=()=>{const{x,m}=upd();if(!(x>=0))return;const kind=gv('fk');S.c.fluid=kind;markUsed('flu');add({ty:'flu',act:cur?'変更':'開始',kind,x,mlh:m});close()}}
+function openInfo(){const c=S.c;
+sheet(`<h3>患者情報</h3><div class="lb">性別</div>${chips('sex',['♂','♂去勢','♀','♀避妊'],c.sex||'')}
+<div class="f2"><label>品種<input id="iBr" value="${esc(c.breed||'')}"></label><label>年齢<input id="iAge" value="${esc(c.age||'')}" placeholder="例：5歳3ヶ月"></label></div>
+<label>基礎疾患<input id="iDz" value="${esc(c.dz||'')}" placeholder="なければ空欄"></label>
+<div class="f2"><label>気管チューブ（サイズ）<input id="iTu" value="${esc(c.tube||'')}" placeholder="例：6.5"></label><label>血圧カフ（サイズ）<input id="iCf" value="${esc(c.cuff||'')}" placeholder="例：#3"></label></div>
+<label>麻酔担当<input id="iSt" value="${esc(c.staff||'')}"></label>
+<div class="acts"><button class="btn" data-x>やめる</button><button class="pri" id="iOk">保存</button></div>`);
+$('#iOk').onclick=()=>{Object.assign(c,{sex:gv('sex'),breed:$('#iBr').value.trim(),age:$('#iAge').value.trim(),dz:$('#iDz').value.trim(),tube:$('#iTu').value.trim(),cuff:$('#iCf').value.trim(),staff:$('#iSt').value.trim()});save();close();render();toast('患者情報を保存しました')}}
+function openTube(){
+sheet(`<h3>挿管</h3><div class="f2"><label>気管チューブ（サイズ）<input id="tTu" value="${esc(S.c.tube||'')}" placeholder="例：6.5"></label><label>血圧カフ（サイズ）<input id="tCf" value="${esc(S.c.cuff||'')}" placeholder="例：#3"></label></div>
+${whenHTML('挿管の時刻')}<div class="acts"><button class="btn" data-x>やめる</button><button class="pri" id="tOk">挿管を記録</button></div>`);whenBind();
+$('#tOk').onclick=()=>{S.c.tube=$('#tTu').value.trim();S.c.cuff=$('#tCf').value.trim();add({ty:'ph',n:'挿管',t:whenT()});close()}}
+
+const VK='anes-voice',RK='anes-readback';let vOn=ls.get(VK)!==false,rbOn=ls.get(RK)===true,spoken=0;
+const SAY={hr:'心拍数',spo2:'エスピーオーツー',et:'イーティーシーオーツー',map:'平均血圧',rr:'呼吸数',inh:'麻酔濃度',exi:'呼気濃度',tv:'一回換気量',tmp:'体温'};
+function rbUI(){[$('#rbOn'),$('#vRb')].forEach(b=>{if(!b)return;b.textContent=rbOn?'読み上げ：オン':'読み上げ：オフ';b.classList.toggle('pri',rbOn);b.classList.toggle('btn',!rbOn)})}
+function readV(v){if(!rbOn)return;const ab=[];const t=VF.filter(f=>v[f.k]!=null&&SAY[f.k]).map(f=>{const l=lvl(f,v[f.k]),r=rng(f);if(l)ab.push(SAY[f.k]+(r&&v[f.k]>r[1]?'が高い':'が低い'));return SAY[f.k]+' '+v[f.k]+(f.k==='tmp'?'度':'')}).join('、');speak(t+(ab.length?'。注意、'+ab.join('、'):''),true)}
+const sy=window.speechSynthesis;
+function jaVoice(){if(!sy)return null;const v=sy.getVoices().filter(x=>/^ja/i.test(x.lang));
+return v.find(x=>/kyoko|o-ren|female|女性|nanami|haruka|ayumi|sayaka|mizuki/i.test(x.name))||v.find(x=>!/otoya|hattori|ichiro|keita|male|男性/i.test(x.name))||v[0]||null}
+function speak(t,force){if(!sy||(!vOn&&!force))return;try{sy.cancel();const u=new SpeechSynthesisUtterance(t),v=jaVoice();u.lang='ja-JP';if(v)u.voice=v;u.rate=1;u.pitch=1.1;u.volume=1;sy.speak(u)}catch(e){}}
+let unlocked=false;document.addEventListener('click',()=>{if(unlocked||!sy)return;unlocked=true;try{const u=new SpeechSynthesisUtterance(' ');u.volume=0;sy.speak(u)}catch(e){}},{capture:true});
+function vUI(){const b=$('#vOn');if(!b)return;b.textContent=vOn?'音声：オン':'音声：オフ';b.classList.toggle('pri',vOn);b.classList.toggle('btn',!vOn);const v=jaVoice();$('#vInfo').textContent=sy?(v?'使用する声：'+v.name:'この端末では日本語の声が見つかりません。端末の設定で日本語の音声を追加してください'):'このブラウザは音声読み上げに対応していません'}
+$('#vOn').onclick=()=>{vOn=!vOn;ls.set(VK,vOn);vUI()};
+$('#vTest').onclick=()=>{const o=vOn;vOn=true;speak('5分たちました。記録してください');vOn=o};
+if(sy&&'onvoiceschanged' in sy)sy.onvoiceschanged=vUI;vUI();rbUI();$('#rbOn').onclick=()=>{rbOn=!rbOn;ls.set(RK,rbOn);rbUI()};
+function tick(){const nx=$('#nx'),msg=t=>{nx.textContent=t;nx.classList.add('sm');$('#due').hidden=true};nx.classList.remove('sm');
+if(!S||!S.ev.length){$('#el').textContent='--:--';msg('導入後に開始');return}
+const ind=phE('導入'),ext=phE('抜管'),st=ind?ind.t:S.ev[0].t;
+$('#el').textContent=clk((ext?ext.t:Date.now())-st);
+if(ext){msg('抜管済み');return}
+const lv=vits().pop(),base=Math.max(lv?lv.t:0,ind?ind.t:0);if(!base){msg('導入後に開始');return}
+const left=300000-(Date.now()-base);
+nx.textContent=left>0?clk(left):'超過 '+clk(-left);$('#due').hidden=left>0;if(left<=0&&spoken!==base){spoken=base;speak('5分たちました。記録してください')}}
+setInterval(()=>{tick();if(S&&Date.now()%30000<1000)draw()},1000);
+
+$('#ph').addEventListener('click',e=>{const b=e.target.closest('[data-p]');if(!b)return;if(phE(b.dataset.p)){toast('記録済みです。取り消すときは下の流れから削除')}else if(b.dataset.p==='導入')openPrep();else if(b.dataset.p==='挿管')openTube();else openWhen(b.dataset.p)});
+$('#dr').addEventListener('click',e=>{const b=e.target.closest('[data-d]');if(b)openDrug(b.dataset.d)});
+$('#cri').addEventListener('click',e=>{const b=e.target.closest('[data-c]'),s=e.target.closest('[data-cs]');if(b)openCri(b.dataset.c);if(s)add({ty:'cri',k:s.dataset.cs,act:'停止'})});
+$('#log').addEventListener('click',e=>{const tb=e.target.closest('[data-et]');if(tb){openEdit(tb.dataset.et);return}const b=e.target.closest('[data-del]');if(!b)return;if(!b.dataset.arm){b.dataset.arm=1;b.textContent='削除';setTimeout(()=>{if(b.isConnected){delete b.dataset.arm;b.textContent='×'}},3000);return}S.ev=S.ev.filter(x=>x.id!==b.dataset.del);save();render()});
+$('#bV').onclick=()=>openV();$('#inf').addEventListener('click',e=>{if(e.target.closest('[data-inf]'))openInfo()});$('#flu').addEventListener('click',e=>{if(e.target.closest('[data-fl]'))openFlu();if(e.target.closest('[data-fs]'))add({ty:'flu',act:'停止',kind:(fluState()||{}).kind||''})});$('#bE').onclick=()=>openEm();$('#bN').onclick=()=>openNote();
+$('#phIn').onchange=e=>{const f=e.target.files[0];if(!f)return;const img=new Image(),u=URL.createObjectURL(f);img.onload=()=>{const k=Math.min(1,800/Math.max(img.width,img.height)),cv=document.createElement('canvas');cv.width=img.width*k;cv.height=img.height*k;cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);URL.revokeObjectURL(u);add({ty:'img',src:cv.toDataURL('image/jpeg',.6)})};img.src=u;e.target.value=''};
+$('#tabs').addEventListener('click',e=>{const b=e.target.closest('[data-v]');if(!b)return;$$('#tabs button').forEach(x=>x.classList.toggle('on',x===b));['plan','rec','sum','hist','set'].forEach(v=>$('#v-'+v).hidden=v!==b.dataset.v);if(b.dataset.v==='sum')sum();if(b.dataset.v==='plan')planv();if(b.dataset.v==='hist')histv();if(b.dataset.v==='set')setv();if(b.dataset.v==='rec'&&S)render()});
+
+function setv(){
+$('#coT').innerHTML=DR.map(d=>`<tr><td>${d.n}</td><td>${d.g}</td><td class="n"><input type="number" inputmode="decimal" step="any" data-co="${d.id}" value="${isNaN(cc(d))?'':cc(d)}" aria-label="${d.n}の濃度"></td></tr>`).join('');
+$$('[data-co]').forEach(i=>i.onchange=()=>{const v=parseFloat(i.value);if(v>0){CO[i.dataset.co]=v;ls.set(CK,CO);toast('濃度を保存しました')}})}
+const HK='anes-hist-v1';let H=ls.get(HK)||[];
+function saveH(h){h=JSON.parse(JSON.stringify(h));for(;;){if(ls.set(HK,h)){H=h;return true}
+const x=h.slice().reverse().find(y=>y.ev.some(e=>e.ty==='img'));if(x){x.ev=x.ev.filter(e=>e.ty!=='img');x.cut=1;continue}
+if(h.length>1){h.pop();continue}return false}}
+function archive(){if(!S||!S.ev.length)return true;ls.del(KEY);const ok=saveH([S,...H.filter(h=>h.c.t0!==S.c.t0)].slice(0,10));if(!ok)save();return ok}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-new]');if(!b)return;
+if(!b.dataset.arm){b.dataset.arm=1;b.dataset.t=b.textContent;b.textContent='もう一度押すと保存して新しい症例へ';setTimeout(()=>{if(b.isConnected&&b.dataset.arm){delete b.dataset.arm;b.textContent=b.dataset.t}},4000);return}
+if(!archive()){toast('保存できませんでした。まとめから印刷・コピーしてください');return}
+toast(S&&S.ev.length?'履歴に保存しました':'新しい症例を始めます');S=null;ls.del(KEY);$('#tabs [data-v="rec"]').click();render()});
+function histv(){const el=$('#v-hist');
+el.innerHTML=(S?'':'<button class="pri" data-reg style="margin-top:16px">新しい症例を登録</button>')+`<h2>保存した症例（${H.length}/10）</h2><p class="mut">この端末のブラウザにだけ保存されます。11例目を保存すると一番古い症例から消えます。</p>`+(H.length?H.map((h,i)=>{const c=h.c;return `<div class="cr"><div><b>${new Date(c.t0).toLocaleDateString('ja-JP')}　カルテNo ${esc(c.no||c.id||'-')}　${esc(c.name||'')}</b><span>${c.sp} ${c.kg} kg・${esc(c.proc||'術式未入力')}・${esc(prf(c.pr).n)}${h.cut?'・写真は容量のため削除':''}</span></div><div class="row" style="margin:0"><button class="btn" data-ho="${i}">開く</button><button class="btn" data-hd="${i}">削除</button></div></div>`}).join(''):'<p class="mut">まだ保存した症例はありません。「設定」または「まとめ」の「保存して新しい症例へ」で保存されます。</p>')}
+$('#v-hist').addEventListener('click',e=>{const o=e.target.closest('[data-ho]'),d=e.target.closest('[data-hd]'),bk=e.target.closest('[data-hb]');
+if(e.target.closest('[data-reg]')){$('#tabs [data-v="rec"]').click();openSetup()}if(bk)histv();if(o)sum($('#v-hist'),norm(H[+o.dataset.ho]),'<button class="btn noprint" data-hb style="margin-top:16px">← 一覧へ戻る</button>');
+if(d){if(!d.dataset.arm){d.dataset.arm=1;d.textContent='削除する';return}saveH(H.filter((x,i)=>i!==+d.dataset.hd));histv()}});
+
+function planRows(){
+const c=S.c,P=prf(c.pr),rows=[],rr=(a,b)=>a===b?fmt(a):fmt(a)+'–'+fmt(b);
+const GO=['前投薬','導入','術中鎮痛','局所麻酔','抗生剤','止血剤','昇圧薬','ステロイド','その他','緊急薬'];[...P.dr,...used().filter(k=>D(k)&&!D(k).cr&&!P.dr.includes(k))].sort((x,y)=>GO.indexOf(D(x).g)-GO.indexOf(D(y).g)).forEach(id=>{const d=D(id),r=rng(d),co=cc(d);let dose='院内で決定',amt='—';
+if(r){if(d.mx){dose='最大 '+r[1]+' '+d.u+'/kg';const m=toMg(d.u,r[1]);amt='最大 '+(d.u==='µg'?fmt(m*1000)+' µg':fmt(m)+' mg')+'／'+fmt(m/co)+' mL'}
+else{dose=rs(r)+' '+d.u+'/kg'+(d.tmp?'（仮）':'');const a=toMg(d.u,r[0]),b=toMg(d.u,r[1]);amt=(d.u==='µg'?rr(a*1000,b*1000)+' µg':rr(a,b)+' mg')+'／'+rr(a/co,b/co)+' mL'}}
+else if(c.sp==='猫'&&d.d)dose='猫では設定なし';
+rows.push([id,PU[id]||'',d.g,d.n,dose,amt,d.r.join('・')])});
+CR.filter(x=>!x.off).forEach(x=>{const id=x.id,d=D(x.dr),r=rng(x);if(!r){rows.push([id,x.p||'術中鎮痛（持続）','CRI',x.n,'猫では設定なし','—','IV']);return}const a=cml(x,r[0]),b=cml(x,r[1]);rows.push([x.id,x.p||'術中鎮痛（持続）','CRI',x.n,rs(r)+' '+cu(x),rr(a,b)+' mL/h（'+fmt(cc(d))+' mg/mL）','IV'])});
+const m=(MAC[c.inh]||{})[c.sp];rows.push(['inh','麻酔維持','吸入麻酔薬',c.inh,m?'MAC 約'+m+'%を目安に調整':'効果を見て調整','気化器で調整','吸入']);
+const f=c.sp==='猫'?[3,5]:[5,5];rows.push(['flu','循環維持','輸液',c.fluid||'平衡晶質液',rr(f[0],f[1])+' mL/kg/h',rr(f[0]*c.kg,f[1]*c.kg)+' mL/h','IV']);
+return rows}
+const used=()=>S.c.used||(S.c.used=[]);
+const planTable=ed=>`<div class="scroll"><table class="plan"><thead><tr><th>使用</th><th>目的</th><th>種類</th><th>薬剤</th><th>薬用量</th><th>この症例の量（${S.c.kg} kg）</th><th>経路</th></tr></thead><tbody>${planRows().map(([k,...r])=>{const on=used().includes(k);return `<tr class="${on?'used':''}"><td class="ck">${ed?`<button type="button" class="cb${on?' on':''}" data-u="${k}" aria-pressed="${on}" aria-label="${esc(r[2])}を使用">${on?'✓':''}</button>`:(on?'✅':'')}</td>${r.map((v,i)=>`<td${i>=3&&i<=4?' class="n"':''}>${esc(v)}</td>`).join('')}</tr>`}).join('')}</tbody></table></div>`;
+const markUsed=k=>{if(S&&!used().includes(k))used().push(k)};
+$('#v-plan').addEventListener('click',e=>{const b=e.target.closest('[data-u]');if(!b||!S)return;const u=used(),k=b.dataset.u,i=u.indexOf(k);if(i<0)u.push(k);else u.splice(i,1);save();planv()});
+function planv(){if(!S)return;const c=S.c,P=prf(c.pr);
+$('#v-plan').innerHTML=`<div class="vh" style="margin-top:16px"><h3>使用する薬剤</h3><button class="btn noprint" id="bGo">記録をはじめる →</button></div>
+<p class="mut">${esc(P.n)}・${c.sp} ${c.kg} kg・ASA ${c.asa}。量は参考用量の範囲を体重で計算したもので、プロトコルにない薬は記録画面の「すべての薬」から使えます。</p>
+${P.nt?`<p class="nt">${esc(P.nt)}</p>`:''}<p class="mut">使った薬にチェックを入れてください。記録画面で投与を記録した薬・CRI・吸入開始は自動でチェックされます。</p>${planTable(true)}<h2>緊急薬</h2>${['hr','br'].includes(c.pr)?'<p class="nt">このプロトコルでは、導入前に緊急薬をシリンジに準備しておきます。</p>':''}${emTable()}<p class="mut">量はRECOVER 2024（犬猫の心肺蘇生ガイドライン）の薬用量表によるものです。濃度は「設定」で確認してください。</p>`;
+$('#bGo').onclick=()=>$('#tabs [data-v="rec"]').click()}
+function paperSheet(cur){
+const c=S.c,ev=S.ev,dl=e=>{const d=D(e.d);return `<li>${hm(e.t)}　${d.n} ${d.u==='µg'?fmt(e.mg*1000)+' µg':fmt(e.mg)+' mg'}（${fmt(e.ml)} mL）${e.r}</li>`};
+const pre=ev.filter(e=>e.ty==='dr'&&['前投薬','導入'].includes(D(e.d).g)),oth=ev.filter(e=>e.ty==='dr'&&!['前投薬','導入'].includes(D(e.d).g));
+const cri=CR.map(x=>{const es=ev.filter(e=>e.ty==='cri'&&e.k===x.id);return es.length?`<li>${x.n}：`+es.map(e=>e.act==='停止'?`停止 ${hm(e.t)}`:`${fmt(e.x)} ${cu(x)}（${fmt(e.mlh)} mL/h）${hm(e.t)}〜`).join(' → ')+'</li>':''}).join('');
+const memo=[...oth.map(e=>({t:e.t,h:dl(e)})),...ev.filter(e=>['chk','note','prep'].includes(e.ty)).map(e=>({t:e.t,h:`<li>${hm(e.t)}　${esc(txt(e))}</li>`}))].sort((a,b)=>a.t-b.t).map(x=>x.h).join('');
+const sexes=['♂','♂去勢','♀','♀避妊'].map(x=>x===c.sex?`<b class="sel">${x}</b>`:x).join('・');
+return `<div class="sheet"><h3 class="sh-t">麻 酔 記 録</h3>
+<table class="hd"><tr><td><span>カルテNo</span>${esc(c.no||c.id||'')}</td><td><span>名前</span>${esc(c.name||'')}</td><td><span>日付</span>${new Date(c.t0).toLocaleDateString('ja-JP')}</td></tr>
+<tr><td colspan="2"><span>手術名</span>${esc(c.proc||'')}</td><td><span>体重</span>${c.kg} kg</td></tr>
+<tr><td>${sexes}</td><td>${c.sp==='犬'?'<b class="sel">犬</b>・猫':'犬・<b class="sel">猫</b>'}（${esc(c.breed||'　　　　')}）</td><td><span>年齢</span>${esc(c.age||'')}</td></tr>
+<tr><td colspan="3"><span>基礎疾患</span>${esc(c.dz||'なし')}</td></tr></table>
+<div class="hd2"><div><h4>【前投与・導入】</h4><ul>${pre.map(dl).join('')||'<li class="mut">記録なし</li>'}</ul></div>
+<div><h4>【CRI】</h4><ul>${cri||'<li class="mut">なし</li>'}</ul><h4>【輸液】</h4><ul>${ev.filter(e=>e.ty==='flu').map(e=>`<li>${hm(e.t)}　${esc(txt(e).replace('輸液 ',''))}</li>`).join('')||'<li class="mut">なし</li>'}</ul><div class="hd3"><div><h4>【気管チューブ】</h4><p>${esc(c.tube||'—')}</p></div><div><h4>【血圧カフ】</h4><p>${esc(c.cuff||'—')}</p></div></div></div></div>
+${LEG}<div class="noprint">${paperSvg(cur,true)}</div><div class="onlyprint">${paperSvg(cur)}</div>
+<div class="memo"><h4>メモ（術中の薬剤・異常と対応・メモ）</h4><ul>${memo||'<li class="mut">なし</li>'}</ul></div></div>`}
+function karteText(){
+const c=S.c,ev=S.ev,P=n=>phE(n),a=P('導入'),b=P('抜管'),k=P('切皮'),z=P('閉創'),L=[];
+const amt=(d,mg)=>d.u==='µg'?fmt(mg*1000)+' µg':fmt(mg)+' mg';
+L.push(`【麻酔記録】${new Date(c.t0).toLocaleDateString('ja-JP')}　カルテNo ${c.no||c.id||'-'}　${c.name||''}（${c.sp}${c.breed?' '+c.breed:''}${c.sex?' '+c.sex:''}${c.age?' '+c.age:''}・${c.kg} kg・ASA ${c.asa}）`);
+if(c.dz)L.push(`基礎疾患：${c.dz}`);
+L.push(`術式：${c.proc||'-'}／${prf(c.pr).n}／吸入：${c.inh}${c.tube?'／気管チューブ '+c.tube:''}${c.cuff?'／血圧カフ '+c.cuff:''}${c.staff?'／麻酔担当：'+c.staff:''}`);
+L.push(`麻酔時間：${a&&b?dj(b.t-a.t)+`（導入${hm(a.t)}〜抜管${hm(b.t)}）`:a?`導入${hm(a.t)}〜（抜管未記録）`:'-'}／手術時間：${k&&z?dj(z.t-k.t)+`（切皮${hm(k.t)}〜閉創${hm(z.t)}）`:'-'}`);
+const tot={};ev.filter(e=>e.ty==='dr').forEach(e=>{const t=tot[e.d]||(tot[e.d]={mg:0,ml:0,r:new Set(),n:0});t.mg+=e.mg;t.ml+=e.ml||0;t.r.add(e.r);t.n++});
+L.push('■使用薬剤（合計）');
+const ids=Object.keys(tot);if(ids.length)ids.forEach(id=>{const d=D(id),t=tot[id];L.push(`・${d.n} ${amt(d,t.mg)}（${fmt(t.ml)} mL）${[...t.r].join('・')}${t.n>1?'　'+t.n+'回':''}`)});else L.push('・なし');
+const cs=CR.map(x=>{const es=ev.filter(e=>e.ty==='cri'&&e.k===x.id);if(!es.length)return '';return `・${x.n} `+es.map(e=>e.act==='停止'?`停止${hm(e.t)}`:`${fmt(e.x)} ${cu(x)}（${hm(e.t)}${e.act==='開始'?'開始':'変更'}）`).join('→')}).filter(Boolean);
+if(cs.length){L.push('■CRI');L.push(...cs)}
+const vs=ev.filter(e=>e.ty==='v');
+if(vs.length){L.push(`■バイタル（${vs.length}回記録・範囲）`);
+L.push(VF.map(f=>{const xs=vs.map(e=>e.v[f.k]).filter(x=>x!=null);if(!xs.length)return '';const lo=Math.min(...xs),hi=Math.max(...xs),bad=xs.some(x=>lvl(f,x));return `${f.n} ${rr2(lo,hi)}${f.u==='%'||f.u==='℃'?f.u:''}${bad?'※':''}`}).filter(Boolean).join('／'));
+const ab=vs.filter(e=>e.v.ecg&&!NORM.includes(e.v.ecg));L.push('心電図：'+(ab.length?ab.map(e=>`${e.v.ecg}（${hm(e.t)}）`).join('、'):'異常なし'));
+if(L[L.length-2].includes('※'))L.push('※＝管理基準から外れた値あり')}
+const ck=ev.filter(e=>e.ty==='chk');if(ck.length){L.push('■異常と対応');ck.forEach(e=>L.push(`・${hm(e.t)} ${e.g?e.g.join('・'):'低血圧（MAP '+e.m+'）'}：確認 ${e.it.join('、')||'なし'}${e.tx?'／対応 '+e.tx:''}`))}
+const pr=ev.find(e=>e.ty==='prep');if(pr)L.push(`■導入前の確認：${pr.it.length}/${pr.it.length+pr.ng.length}項目${pr.ng.length?'（未確認：'+pr.ng.join('、')+'）':''}`);
+const fl=ev.filter(e=>e.ty==='flu');if(fl.length){L.push('■輸液');fl.forEach(e=>L.push(`・${hm(e.t)} ${txt(e).replace('輸液 ','')}`))}
+const nt=ev.filter(e=>e.ty==='note');if(nt.length){L.push('■メモ');nt.forEach(e=>L.push(`・${hm(e.t)} ${e.tx}`))}
+return L.join('\n')}
+function sum(el=$('#v-sum'),T=S,head=''){
+if(!T)return;const keep=S;S=T;try{
+const cur=T===keep,kt=karteText(),c=S.c,ev=S.ev,a=phE('導入'),b=phE('抜管'),k=phE('切皮'),z=phE('閉創'),vs=vits(),ds=ev.filter(e=>e.ty==='dr'),tot={};
+ds.forEach(e=>{const t=tot[e.d]||(tot[e.d]={mg:0,ml:0});t.mg+=e.mg;t.ml+=e.ml});
+const info=[['カルテNo',c.no||c.id],['患者・ペット名',c.name],['動物種',c.sp+(c.breed?'（'+c.breed+'）':'')],['性別',c.sex],['年齢',c.age],['基礎疾患',c.dz||'なし'],['体重',c.kg+' kg'],['ASA',c.asa],['術式',c.proc],['プロトコル',prf(c.pr).n],['吸入麻酔薬',c.inh],['麻酔担当',c.staff],['日付',new Date(c.t0).toLocaleDateString('ja-JP')],['麻酔時間（導入〜抜管）',a?(b?dj(b.t-a.t):cur?dj(Date.now()-a.t)+'（継続中）':'抜管が未記録'):'-'],['手術時間（切皮〜閉創）',k&&z?dj(z.t-k.t):'-']];
+const imgs=ev.filter(e=>e.ty==='img'),notes=ev.filter(e=>['note','chk','cri','prep','flu'].includes(e.ty));
+el.innerHTML=head+`<div class="vh" style="margin-top:16px"><h3>麻酔記録</h3><div class="row noprint" style="margin:0"><button class="btn" data-p1>印刷・PDF</button><button class="pri" data-k1>カルテ用にコピー</button><button class="btn" data-c1>全記録をコピー</button>${cur?'<button class="btn" data-new>保存して次の症例へ</button>':''}</div></div>
+<p class="mut noprint">Claudeのプレビュー画面では印刷できません。Safariなどで開いたときに使えます。</p>
+<details class="noprint"><summary>カルテ用テキストを表示</summary><textarea readonly rows="14" class="kt">${esc(kt)}</textarea></details>
+<div class="kv">${info.map(([l,v])=>`<div class="cell"><span>${l}</span><b>${esc(v||'-')}</b></div>`).join('')}</div>
+<h2>使用する薬剤（✅＝使用）</h2>${planTable(false)}
+${paperSheet(cur)}
+<h2>流れ</h2><div class="scroll"><table><tbody>${PH.map(n=>{const e=phE(n);return `<tr><td>${n}</td><td class="n">${e?hm(e.t):'-'}</td></tr>`}).join('')}</tbody></table></div>
+<h2>バイタル</h2><div class="scroll"><table><thead><tr><th>時刻</th>${VF.map(f=>`<th class="n">${f.n}</th>`).join('')}<th>心電図</th></tr></thead><tbody>${vs.map(e=>`<tr><td>${hm(e.t)}</td>${VF.map(f=>`<td class="n ${lvl(f,e.v[f.k])}">${e.v[f.k]??'-'}</td>`).join('')}<td>${esc(e.v.ecg||'-')}</td></tr>`).join('')||'<tr><td colspan="10" class="mut">記録なし</td></tr>'}</tbody></table></div>
+<h2>薬剤</h2><div class="scroll"><table><thead><tr><th>時刻</th><th>薬剤</th><th class="n">用量</th><th class="n">量</th><th class="n">mL</th><th>経路</th></tr></thead><tbody>${ds.map(e=>{const d=D(e.d);return `<tr><td>${hm(e.t)}</td><td>${d.n}</td><td class="n">${fmt(e.x)} ${d.u}/kg</td><td class="n">${d.u==='µg'?fmt(e.mg*1000)+' µg':fmt(e.mg)+' mg'}</td><td class="n">${fmt(e.ml)}</td><td>${e.r}</td></tr>`}).join('')||'<tr><td colspan="6" class="mut">記録なし</td></tr>'}</tbody></table></div>
+${Object.keys(tot).length?`<h2>薬剤の合計</h2><div class="scroll"><table><tbody>${Object.entries(tot).map(([id,t])=>{const d=D(id);return `<tr><td>${d.n}</td><td class="n">${d.u==='µg'?fmt(t.mg*1000)+' µg':fmt(t.mg)+' mg'}</td><td class="n">${fmt(t.ml)} mL</td></tr>`}).join('')}</tbody></table></div>`:''}
+<h2>CRI・メモ</h2><div class="scroll"><table><tbody>${notes.map(e=>`<tr><td>${hm(e.t)}</td><td style="white-space:normal">${esc(txt(e))}</td></tr>`).join('')||'<tr><td class="mut">記録なし</td></tr>'}</tbody></table></div>
+${imgs.length?`<h2>写真</h2><div class="ph-imgs">${imgs.map(e=>`<figure><img src="${e.src}" alt="記録した写真"><figcaption>${hm(e.t)}</figcaption></figure>`).join('')}</div>`:''}`;
+el.querySelector('[data-p1]').onclick=()=>{try{window.print()}catch(e){toast('この画面では印刷できません')}};
+el.querySelector('[data-k1]').onclick=()=>{try{navigator.clipboard.writeText(kt).then(()=>toast('カルテ用テキストをコピーしました'),()=>toast('コピーできませんでした。「カルテ用テキストを表示」から選択してコピーしてください'))}catch(e){toast('コピーできませんでした')}};
+el.querySelector('[data-c1]').onclick=()=>{const t=['麻酔記録',...info.map(([l,v])=>`${l}：${v||'-'}`),'',...ev.map(e=>`${hm(e.t)} ${txt(e)}`)].join('\n');try{navigator.clipboard.writeText(t).then(()=>toast('コピーしました'),()=>toast('コピーできませんでした'))}catch(e){toast('コピーできませんでした')}}}finally{S=keep}}
+
+render();
+}
+</script>
+</body>
+</html>
