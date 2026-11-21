@@ -93,6 +93,7 @@ textarea.kt{font-size:14px;line-height:1.6;white-space:pre-wrap}
 @media print{.sheet{break-before:page}.sheet .scroll{overflow:visible;border:0}.sheet svg{width:100%;height:auto}}
 .inf{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px;padding:8px 12px;background:var(--card);border-radius:10px}.inf span{margin-right:16px;font-weight:700;white-space:nowrap}.inf i{font-style:normal;font-weight:400;color:var(--mut);font-size:13px;margin-right:6px}
 .tbtn{border:0;background:none;font-weight:700;text-decoration:underline dotted;text-underline-offset:3px;padding:0;min-height:36px;text-align:left;color:var(--ink)}.wht{display:block;margin-top:8px;font-size:18px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);min-height:44px}.wht[hidden]{display:none}
+.sel2{display:block;width:100%;margin-top:4px;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);min-height:44px}
 .kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-top:8px}
 .kv b{font-size:17px!important}
 .mut{color:var(--mut);font-size:14px;margin:4px 0}
@@ -142,6 +143,11 @@ textarea.kt{font-size:14px;line-height:1.6;white-space:pre-wrap}
   <p class="mut">前回のバイタル記録から5分たつと「5分たちました。記録してください」と女性の声でお知らせします。</p>
   <div class="row" style="margin-top:8px"><button class="btn" id="vOn"></button><button class="btn" id="vTest">声を試す</button></div>
   <p class="mut" id="vInfo"></p>
+  <h2>声の種類</h2>
+  <div class="lb">声のタイプ（女性）</div>
+  <div class="chips" id="vPre"></div>
+  <label>使う声（このiPadに入っている日本語の声）<select id="vSel" class="sel2"></select></label>
+  <p class="mut">声を増やすには、iPadの「設定」→「アクセシビリティ」→「読み上げコンテンツ」→「声」→「日本語」から追加の声（Kyokoの拡張版・O-Renなど）をダウンロードすると、ここに出てきます。</p>
   <h2>バイタルの読み上げ</h2>
   <p class="mut">「記録する」を押したときに、入力したバイタルを声で読み上げます。バイタルの入力画面でも切り替えられます。</p>
   <div class="row" style="margin-top:8px"><button class="btn" id="rbOn"></button></div>
@@ -498,12 +504,18 @@ const SAY={hr:'心拍数',spo2:'エスピーオーツー',et:'イーティーシ
 function rbUI(){[$('#rbOn'),$('#vRb')].forEach(b=>{if(!b)return;b.textContent=rbOn?'読み上げ：オン':'読み上げ：オフ';b.classList.toggle('pri',rbOn);b.classList.toggle('btn',!rbOn)})}
 function readV(v){if(!rbOn)return;const ab=[];const t=VF.filter(f=>v[f.k]!=null&&SAY[f.k]).map(f=>{const l=lvl(f,v[f.k]),r=rng(f);if(l)ab.push(SAY[f.k]+(r&&v[f.k]>r[1]?'が高い':'が低い'));return SAY[f.k]+' '+v[f.k]+(f.k==='tmp'?'度':'')}).join('、');speak(t+(ab.length?'。注意、'+ab.join('、'):''),true)}
 const sy=window.speechSynthesis;
-function jaVoice(){if(!sy)return null;const v=sy.getVoices().filter(x=>/^ja/i.test(x.lang));
-return v.find(x=>/kyoko|o-ren|female|女性|nanami|haruka|ayumi|sayaka|mizuki/i.test(x.name))||v.find(x=>!/otoya|hattori|ichiro|keita|male|男性/i.test(x.name))||v[0]||null}
-function speak(t,force){if(!sy||(!vOn&&!force))return;try{sy.cancel();const u=new SpeechSynthesisUtterance(t),v=jaVoice();u.lang='ja-JP';if(v)u.voice=v;u.rate=1;u.pitch=1.1;u.volume=1;sy.speak(u)}catch(e){}}
+const VN='anes-voice-name',VPK='anes-voice-pre';let vName=ls.get(VN)||'',vPre=ls.get(VPK)||'std';
+const PRE={std:['標準',1,1.1],hi:['明るく高め',1.05,1.35],calm:['落ち着いた低め',.92,.95],slow:['ゆっくり・はっきり',.82,1.15]};
+const MALE=/otoya|hattori|ichiro|keita|male|男性/i,FEM=/kyoko|o-ren|female|女性|nanami|haruka|ayumi|sayaka|mizuki/i;
+const jaList=()=>sy?sy.getVoices().filter(x=>/^ja/i.test(x.lang)):[];
+function jaVoice(){const v=jaList();if(!v.length)return null;if(vName){const f=v.find(x=>x.name===vName);if(f)return f}return v.find(x=>FEM.test(x.name))||v.find(x=>!MALE.test(x.name))||v[0]}
+function speak(t,force){if(!sy||(!vOn&&!force))return;try{sy.cancel();const u=new SpeechSynthesisUtterance(t),v=jaVoice();u.lang='ja-JP';if(v)u.voice=v;const pr=PRE[vPre]||PRE.std;u.rate=pr[1];u.pitch=pr[2];u.volume=1;sy.speak(u)}catch(e){}}
 let unlocked=false;document.addEventListener('click',()=>{if(unlocked||!sy)return;unlocked=true;try{const u=new SpeechSynthesisUtterance(' ');u.volume=0;sy.speak(u)}catch(e){}},{capture:true});
-function vUI(){const b=$('#vOn');if(!b)return;b.textContent=vOn?'音声：オン':'音声：オフ';b.classList.toggle('pri',vOn);b.classList.toggle('btn',!vOn);const v=jaVoice();$('#vInfo').textContent=sy?(v?'使用する声：'+v.name:'この端末では日本語の声が見つかりません。端末の設定で日本語の音声を追加してください'):'このブラウザは音声読み上げに対応していません'}
+function vUI(){const b=$('#vOn');if(!b)return;const sel=$('#vSel'),list=jaList();sel.innerHTML='<option value="">自動（女性の声を優先）</option>'+list.map(x=>`<option value="${esc(x.name)}"${x.name===vName?' selected':''}>${esc(x.name)}${FEM.test(x.name)?'（女性）':MALE.test(x.name)?'（男性）':''}</option>`).join('');
+$('#vPre').innerHTML=Object.entries(PRE).map(([k,[n]])=>`<button type="button" class="chip${k===vPre?' on':''}" data-pre="${k}">${n}</button>`).join('');b.textContent=vOn?'音声：オン':'音声：オフ';b.classList.toggle('pri',vOn);b.classList.toggle('btn',!vOn);const v=jaVoice();$('#vInfo').textContent=sy?(v?'使用する声：'+v.name:'この端末では日本語の声が見つかりません。端末の設定で日本語の音声を追加してください'):'このブラウザは音声読み上げに対応していません'}
 $('#vOn').onclick=()=>{vOn=!vOn;ls.set(VK,vOn);vUI()};
+$('#vSel').onchange=e=>{vName=e.target.value;ls.set(VN,vName);vUI();speak('この声でお知らせします',true)};
+$('#vPre').addEventListener('click',e=>{const b=e.target.closest('[data-pre]');if(!b)return;vPre=b.dataset.pre;ls.set(VPK,vPre);vUI();speak('5分たちました。記録してください',true)});
 $('#vTest').onclick=()=>{const o=vOn;vOn=true;speak('5分たちました。記録してください');vOn=o};
 if(sy&&'onvoiceschanged' in sy)sy.onvoiceschanged=vUI;vUI();rbUI();$('#rbOn').onclick=()=>{rbOn=!rbOn;ls.set(RK,rbOn);rbUI()};
 function tick(){const nx=$('#nx'),msg=t=>{nx.textContent=t;nx.classList.add('sm');$('#due').hidden=true};nx.classList.remove('sm');
