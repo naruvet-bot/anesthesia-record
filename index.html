@@ -100,6 +100,7 @@ textarea.kt{font-size:14px;line-height:1.6;white-space:pre-wrap}
 .tl{margin-top:4px;font-size:13px}.sel3{display:block;width:100%;font-size:15px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);min-height:40px;margin-top:2px}
 .tmr .stopal{grid-column:1/-1;min-height:52px;font-size:18px;background:#d62828;color:#fff;border:0;border-radius:10px;font-weight:700}
 @media(max-width:700px){.ph{grid-template-columns:repeat(3,minmax(0,1fr))}.tmr{grid-column:1/-1;grid-template-columns:1fr}}
+.sug{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}.sug .chip{min-height:40px;font-size:15px;background:var(--bg);border-color:var(--pri);color:var(--ink)}
 .kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-top:8px}
 .kv b{font-size:17px!important}
 .mut{color:var(--mut);font-size:14px;margin:4px 0}
@@ -248,6 +249,14 @@ const prf=k=>PR[k]||{n:'旧プロトコル（'+k+'）',dr:[],nt:''};
 const prFor=s=>Object.entries(PR).filter(([k,v])=>!v.sp||v.sp===s).map(([k,v])=>[k,v.n]);
 const TUBES=Array.from({length:17},(_,i)=>(3+i*.5).toFixed(1)),CUFFS=['#1','#2','#3','#4','#5'];
 const selOpt=(id,arr,cur,ph)=>{const v=String(cur||'');const list=v&&!arr.includes(v)?[v,...arr]:arr;return `<select id="${id}" class="sel2"><option value="">${ph}</option>${list.map(x=>`<option${x===v?' selected':''}>${esc(x)}</option>`).join('')}</select>`};
+const BR={犬:'トイプードル,ミニチュアダックスフンド,カニンヘンダックスフンド,スタンダードダックスフンド,チワワ,ポメラニアン,ミニチュアシュナウザー,ヨークシャーテリア,シーズー,マルチーズ,フレンチブルドッグ,柴犬|シバイヌ,豆柴|マメシバ,パグ,ゴールデンレトリバー,ラブラドールレトリバー,フラットコーテッドレトリバー,キャバリアキングチャールズスパニエル,ミニチュアピンシャー,ジャックラッセルテリア,パーソンラッセルテリア,ビションフリーゼ,パピヨン,ペキニーズ,ボーダーコリー,ウェルシュコーギーペンブローク,ウェルシュコーギーカーディガン,ビーグル,シェットランドシープドッグ,イタリアングレーハウンド,ボストンテリア,アメリカンコッカースパニエル,イングリッシュコッカースパニエル,イングリッシュスプリンガースパニエル,ウエストハイランドホワイトテリア,ケアーンテリア,ノーフォークテリア,ノーリッチテリア,ボーダーテリア,スコティッシュテリア,エアデールテリア,ワイアーフォックステリア,スムースフォックステリア,ベドリントンテリア,シーリハムテリア,ミニチュアブルテリア,ブルテリア,スタッフォードシャーブルテリア,アメリカンピットブルテリア,スタンダードプードル,ミディアムプードル,ミニチュアプードル,ティーカッププードル,秋田犬|アキタイヌ,甲斐犬|カイケン,北海道犬|ホッカイドウイヌ,紀州犬|キシュウケン,四国犬|シコクケン,土佐犬|トサケン,狆|チン,日本スピッツ|ニホンスピッツ,シベリアンハスキー,アラスカンマラミュート,サモエド,バーニーズマウンテンドッグ,グレートピレニーズ,セントバーナード,ニューファンドランド,ドーベルマン,ジャーマンシェパード,ベルジアンシェパード,オーストラリアンシェパード,ボクサー,ブルドッグ,ワイマラナー,ダルメシアン,ボルゾイ,アフガンハウンド,ウィペット,グレートデーン,シャーペイ,チャウチャウ,ラサアプソ,チベタンテリア,ブリュッセルグリフォン,ゴールデンドゥードル,ラブラドゥードル,バセットハウンド,ブラッドハウンド,ポインター,アイリッシュセッター,イングリッシュセッター,ロットワイラー,マスティフ,ブルマスティフ,チャイニーズクレステッドドッグ,ジャパニーズテリア|ジャパニーズテリア,ミックス（雑種）|ミックスザッシュ',猫:'ミックス（雑種）|ミックスザッシュ,日本猫|ニホンネコ,スコティッシュフォールド,スコティッシュストレート,マンチカン,アメリカンショートヘア,ブリティッシュショートヘア,ブリティッシュロングヘア,ラグドール,ノルウェージャンフォレストキャット,メインクーン,ロシアンブルー,ペルシャ,チンチラ,エキゾチックショートヘア,ベンガル,シャム,アビシニアン,ソマリ,サイベリアン,ミヌエット,ラガマフィン,ヒマラヤン,シンガプーラ,トンキニーズ,バーミーズ,ボンベイ,エジプシャンマウ,オシキャット,コーニッシュレックス,デボンレックス,セルカークレックス,スフィンクス,ターキッシュアンゴラ,ターキッシュバン,ジャパニーズボブテイル,アメリカンカール,バーマン,ハバナブラウン,ネベロング,ラパーマ,オリエンタルショートヘア,ベンガル,サバンナ,トイガー,キンカロー'};
+const brList=sp=>{const base=[...new Set(BR[sp].split(','))].map(x=>{const[a,b]=x.split('|');return{n:a,r:(b||a).replace(/[・\s　（）()]/g,'')}});const own=(ls.get('anes-patients')||[]).filter(p=>p.sp===sp&&p.breed&&!base.some(b=>b.n===p.breed)).map(p=>({n:p.breed,r:kata(p.breed).replace(/[・\s　]/g,'')}));return [...own,...base]};
+function brAttach(inp,spf){const box=document.createElement('div');box.className='sug';inp.after(box);
+const show=()=>{const q=kata(inp.value.trim()).replace(/[・\s　]/g,'');if(!q){box.innerHTML='';return}const L=brList(spf()),a=L.filter(b=>b.r.startsWith(q)||b.n.startsWith(inp.value.trim())),c=q.length<2?[]:L.filter(b=>!a.includes(b)&&(b.r.includes(q)||b.n.includes(inp.value.trim())));const r=[...a,...c].slice(0,10);
+box.innerHTML=r.length&&!(r.length===1&&r[0].n===inp.value.trim())?r.map(b=>`<button type="button" class="chip" data-br="${esc(b.n)}">${esc(b.n)}</button>`).join(''):''};
+['input','compositionupdate','keyup'].forEach(ev=>inp.addEventListener(ev,()=>setTimeout(show)));
+box.addEventListener('pointerdown',e=>e.preventDefault());box.addEventListener('click',e=>{const b=e.target.closest('[data-br]');if(!b)return;inp.value=b.dataset.br;box.innerHTML='';inp.blur()});
+inp.addEventListener('blur',()=>setTimeout(()=>{box.innerHTML=''},200))}
 const FL=['ヴィーンF','リンゲル液','生理食塩液','ボルベン'];
 const PH=['導入','挿管','吸入開始','切皮','閉創','吸入停止','抜管'];
 const CHK=['麻酔深度（深すぎないか）','吸入濃度を下げられるか','心拍数（徐脈はないか）','体温','出血・循環血液量','心収縮力・不整脈'];
@@ -298,7 +307,7 @@ ${(ls.get('anes-patients')||[]).length?`<label>以前の患者から選ぶ<selec
 <div class="lb">動物種</div>${chips('sp',['犬','猫'],'犬')}
 <label>体重（kg）<input id="sKg" type="number" inputmode="decimal" step="any"></label>
 <div class="lb">性別</div>${chips('sex',['♂','♂去勢','♀','♀避妊'],'')}
-<div class="f2"><label>品種<input id="sBr" autocomplete="off"></label><label>年齢<input id="sAge" autocomplete="off" placeholder="例：5歳3ヶ月"></label></div>
+<div class="f2"><label>品種<input id="sBr" autocomplete="off" placeholder="最初の文字で候補が出ます"></label><label>年齢<input id="sAge" autocomplete="off" placeholder="例：5歳3ヶ月"></label></div>
 <label>基礎疾患<input id="sDz" autocomplete="off" placeholder="なければ空欄"></label>
 <label>術式（手術名）<input id="sPr" autocomplete="off"></label>
 <div class="lb">ASA分類</div>${chips('asa',['I','II','III','IV','V'],'I')}
@@ -311,6 +320,7 @@ if($('#sH'))$('#sH').onclick=()=>{close();$('#tabs [data-v="hist"]').click()};
 const prN=()=>{$('#prN').textContent=prf(gv('pr')).nt};
 $('#shc [data-g="sp"]').addEventListener('click',()=>setTimeout(()=>{const s=gv('sp');$('#prW').innerHTML=chips('pr',prFor(s),s==='猫'?'c1':'d1');prN()}));
 $('#prW').addEventListener('click',()=>setTimeout(prN));
+brAttach($('#sBr'),()=>gv('sp')||'犬');
 const nm=$('#sNm'),kn=$('#sKn'),isKana=t=>/^[ぁ-ゖ゠-ヿ\s　]*$/.test(t);
 const YK='anes-yomi',YB=Object.fromEntries('生川ナルカワ,佐藤サトウ,鈴木スズキ,高橋タカハシ,田中タナカ,伊藤イトウ,渡辺ワタナベ,渡邊ワタナベ,渡邉ワタナベ,山本ヤマモト,中村ナカムラ,小林コバヤシ,加藤カトウ,吉田ヨシダ,山田ヤマダ,佐々木ササキ,山口ヤマグチ,松本マツモト,井上イノウエ,木村キムラ,林ハヤシ,斎藤サイトウ,斉藤サイトウ,齋藤サイトウ,清水シミズ,山崎ヤマザキ,森モリ,池田イケダ,橋本ハシモト,阿部アベ,石川イシカワ,山下ヤマシタ,中島ナカジマ,石井イシイ,小川オガワ,前田マエダ,岡田オカダ,長谷川ハセガワ,藤田フジタ,後藤ゴトウ,近藤コンドウ,村上ムラカミ,遠藤エンドウ,青木アオキ,坂本サカモト,福田フクダ,太田オオタ,西村ニシムラ,藤井フジイ,岡本オカモト,松田マツダ,中川ナカガワ,中野ナカノ,原田ハラダ,小野オノ,田村タムラ,竹内タケウチ,金子カネコ,和田ワダ,中山ナカヤマ,藤原フジワラ,石田イシダ,上田ウエダ,森田モリタ,原ハラ,柴田シバタ,酒井サカイ,工藤クドウ,横山ヨコヤマ,宮崎ミヤザキ,宮本ミヤモト,内田ウチダ,高木タカギ,安藤アンドウ,谷口タニグチ,大野オオノ,丸山マルヤマ,今井イマイ,高田タカダ,藤本フジモト,武田タケダ,村田ムラタ,上野ウエノ,杉山スギヤマ,増田マスダ,平野ヒラノ,大塚オオツカ,千葉チバ,久保クボ,松井マツイ,小島コジマ,岩崎イワサキ,桜井サクライ,野口ノグチ,松尾マツオ,野村ノムラ,木下キノシタ,菊地キクチ,菊池キクチ,佐野サノ,大西オオニシ,杉本スギモト,新井アライ,浜田ハマダ,菅原スガワラ,市川イチカワ,水野ミズノ,小松コマツ,島田シマダ,古川フルカワ,小山コヤマ,高野タカノ,西田ニシダ,山内ヤマウチ,西川ニシカワ,五十嵐イガラシ,北村キタムラ,安田ヤスダ,中田ナカタ,川口カワグチ,平田ヒラタ,川崎カワサキ,飯田イイダ,吉川ヨシカワ,本田ホンダ,久保田クボタ,沢田サワダ,辻ツジ,関セキ,吉村ヨシムラ,岩田イワタ,中西ナカニシ,服部ハットリ,樋口ヒグチ,福島フクシマ,川上カワカミ,永井ナガイ,松岡マツオカ,田口タグチ,山中ヤマナカ,森本モリモト,土屋ツチヤ,矢野ヤノ,広瀬ヒロセ,秋山アキヤマ,石原イシハラ,松下マツシタ,大橋オオハシ,松浦マツウラ,吉岡ヨシオカ,小池コイケ,馬場ババ,浅野アサノ,荒木アラキ,大久保オオクボ,野田ノダ,田辺タナベ,川村カワムラ,星野ホシノ,黒田クロダ,堀ホリ,尾崎オザキ,望月モチヅキ,永田ナガタ,熊谷クマガイ,内藤ナイトウ,松村マツムラ,西山ニシヤマ,大谷オオタニ,平井ヒライ,大島オオシマ,岩本イワモト,片山カタヤマ,本間ホンマ,早川ハヤカワ,横田ヨコタ,岡崎オカザキ,荒井アライ,大石オオイシ,成田ナリタ,宮田ミヤタ,小田オダ,石橋イシバシ,篠原シノハラ,須藤スドウ,小西コニシ,南ミナミ,高山タカヤマ,栗原クリハラ,伊東イトウ,松原マツバラ,三浦ミウラ,宮下ミヤシタ,水谷ミズタニ,服部ハットリ,伊藤イトウ,奥田オクダ,小田切オダギリ,稲垣イナガキ,浅井アサイ,森川モリカワ,堀田ホッタ'.split(',').map(x=>{const i=x.search(/[ァ-ヿ]/);return[x.slice(0,i),x.slice(i)]}));
 const yomi=t=>{const u=ls.get(YK)||{};return u[t]||YB[t]||null},hasK=t=>/[一-龯々〆ヵヶ]/.test(t);
@@ -508,6 +518,7 @@ sheet(`<h3>患者情報</h3><div class="lb">性別</div>${chips('sex',['♂','�
 <div class="f2"><label>気管チューブ（サイズ）${selOpt('iTu',TUBES,c.tube,'選択してください')}</label><label>血圧カフ（サイズ）${selOpt('iCf',CUFFS,c.cuff,'選択してください')}</label></div>
 <label>麻酔担当<input id="iSt" value="${esc(c.staff||'')}"></label>
 <div class="acts"><button class="btn" data-x>やめる</button><button class="pri" id="iOk">保存</button></div>`);
+brAttach($('#iBr'),()=>S.c.sp);
 $('#iOk').onclick=()=>{Object.assign(c,{sex:gv('sex'),breed:$('#iBr').value.trim(),age:$('#iAge').value.trim(),dz:$('#iDz').value.trim(),tube:$('#iTu').value.trim(),cuff:$('#iCf').value.trim(),staff:$('#iSt').value.trim()});save();close();render();toast('患者情報を保存しました')}}
 function openTube(){
 sheet(`<h3>挿管</h3><div class="f2"><label>気管チューブ（サイズ）${selOpt('tTu',TUBES,S.c.tube,'選択してください')}</label><label>血圧カフ（サイズ）${selOpt('tCf',CUFFS,S.c.cuff,'選択してください')}</label></div>
