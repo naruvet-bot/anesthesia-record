@@ -27,8 +27,8 @@ button,input,textarea{font:inherit;color:inherit}button{cursor:pointer}
 .tabs .on{color:var(--ink);border-color:var(--pri)}
 main{max-width:1100px;margin:0 auto;padding:8px max(4vw,14px) 80px}
 h2{font-size:17px;margin:24px 0 8px}h3{font-size:22px;margin:0 0 6px;line-height:1.2}
-.ph{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px}
-.ph button{min-height:58px;border:1px solid var(--line);background:var(--card);border-radius:10px;font-weight:700}
+.ph{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
+.ph button{align-self:start;min-height:58px;border:1px solid var(--line);background:var(--card);border-radius:10px;font-weight:700}
 .ph button.done{background:var(--pri);color:var(--pin);border-color:var(--pri)}.ph small{display:block;font-weight:400;font-size:13px}
 .vh{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .pri{background:var(--pri);color:var(--pin);border:0;border-radius:10px;min-height:48px;padding:0 18px;font-weight:700}
@@ -94,6 +94,12 @@ textarea.kt{font-size:14px;line-height:1.6;white-space:pre-wrap}
 .inf{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-top:12px;padding:8px 12px;background:var(--card);border-radius:10px}.inf span{margin-right:16px;font-weight:700;white-space:nowrap}.inf i{font-style:normal;font-weight:400;color:var(--mut);font-size:13px;margin-right:6px}
 .tbtn{border:0;background:none;font-weight:700;text-decoration:underline dotted;text-underline-offset:3px;padding:0;min-height:36px;text-align:left;color:var(--ink)}.wht{display:block;margin-top:8px;font-size:18px;padding:8px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);min-height:44px}.wht[hidden]{display:none}
 .sel2{display:block;width:100%;margin-top:4px;font-size:16px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);min-height:44px}
+.tmr{grid-column:2/-1;display:grid;grid-template-columns:1fr 1fr;gap:8px;border:1px solid var(--line);border-radius:10px;padding:8px;background:var(--card)}
+.tb{border-radius:8px;padding:4px 6px}.tb.ring{background:var(--r);animation:bl 1s infinite}.th{font-size:13px;color:var(--mut);font-weight:700}.tb>b{display:block;font-size:30px;line-height:1.15;font-variant-numeric:tabular-nums}
+.tr{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}.tr .btn{min-height:40px;padding:0 10px;font-size:14px}.tr .chip{min-height:36px;padding:0 8px;font-size:13px}
+.tl{margin-top:4px;font-size:13px}.sel3{display:block;width:100%;font-size:15px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);min-height:40px;margin-top:2px}
+.tmr .stopal{grid-column:1/-1;min-height:52px;font-size:18px;background:#d62828;color:#fff;border:0;border-radius:10px;font-weight:700}
+@media(max-width:700px){.ph{grid-template-columns:repeat(3,minmax(0,1fr))}.tmr{grid-column:1/-1;grid-template-columns:1fr}}
 .kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-top:8px}
 .kv b{font-size:17px!important}
 .mut{color:var(--mut);font-size:14px;margin:4px 0}
@@ -148,6 +154,9 @@ textarea.kt{font-size:14px;line-height:1.6;white-space:pre-wrap}
   <div class="chips" id="vPre"></div>
   <label>使う声（このiPadに入っている日本語の声）<select id="vSel" class="sel2"></select></label>
   <p class="mut">声を増やすには、iPadの「設定」→「アクセシビリティ」→「読み上げコンテンツ」→「声」→「日本語」から追加の声（Kyokoの拡張版・O-Renなど）をダウンロードすると、ここに出てきます。</p>
+  <h2>タイマーのアラーム音</h2>
+  <p class="mut">ストップウォッチとタイマーの時間が来たときに鳴らす音です。押すと試しに鳴ります。</p>
+  <div class="chips" id="alS"></div>
   <h2>バイタルの読み上げ</h2>
   <p class="mut">「記録する」を押したときに、入力したバイタルを声で読み上げます。バイタルの入力画面でも切り替えられます。</p>
   <div class="row" style="margin-top:8px"><button class="btn" id="rbOn"></button></div>
@@ -237,6 +246,8 @@ const MAC={'イソフルラン':{犬:1.3,猫:1.6},'セボフルラン':{犬:2.3,
 Object.values(PR).forEach(p=>['atr','amp','adn','con','eph','pdn','dxm'].forEach(i=>{if(!p.dr.includes(i))p.dr.push(i)}));
 const prf=k=>PR[k]||{n:'旧プロトコル（'+k+'）',dr:[],nt:''};
 const prFor=s=>Object.entries(PR).filter(([k,v])=>!v.sp||v.sp===s).map(([k,v])=>[k,v.n]);
+const TUBES=Array.from({length:17},(_,i)=>(3+i*.5).toFixed(1)),CUFFS=['#1','#2','#3','#4','#5'];
+const selOpt=(id,arr,cur,ph)=>{const v=String(cur||'');const list=v&&!arr.includes(v)?[v,...arr]:arr;return `<select id="${id}" class="sel2"><option value="">${ph}</option>${list.map(x=>`<option${x===v?' selected':''}>${esc(x)}</option>`).join('')}</select>`};
 const FL=['ヴィーンF','リンゲル液','生理食塩液','ボルベン'];
 const PH=['導入','挿管','吸入開始','切皮','閉創','吸入停止','抜管'];
 const CHK=['麻酔深度（深すぎないか）','吸入濃度を下げられるか','心拍数（徐脈はないか）','体温','出血・循環血液量','心収縮力・不整脈'];
@@ -280,6 +291,7 @@ const chips=(g,arr,on,multi)=>`<div class="chips" data-g="${g}"${multi?' data-mu
 
 function openSetup(){
 sheet(`<h3>症例の登録</h3><p class="mut">手術の前に入力します。体重は量の計算に使います。</p>
+${(ls.get('anes-patients')||[]).length?`<label>以前の患者から選ぶ<select id="sPt" class="sel2"><option value="">新しい患者（選ばない）</option>${(ls.get('anes-patients')||[]).map((x,i)=>`<option value="${i}">${esc(x.name||'')}${x.no?'（No '+esc(x.no)+'）':''}${x.breed?' '+esc(x.breed):''}</option>`).join('')}</select></label>`:''}
 <label>カルテNo<input id="sNo" autocomplete="off" inputmode="numeric"></label>
 <label>患者・ペット名（漢字・ひらがな・カタカナ）<input id="sNm" autocomplete="off" placeholder="例：鈴木ラッキー"></label>
 <label>フリガナ（自動で入ります・直せます）<input id="sKn" autocomplete="off" placeholder="例：スズキラッキー"></label><p class="warn" id="knH"></p>
@@ -315,11 +327,14 @@ let acc='',keep=[];for(const x of segs){if(v.startsWith(acc+x.t)){acc+=x.t;keep.
 nm.addEventListener('input',e=>{if(!e.isComposing)rebuild()});
 kn.addEventListener('input',()=>{edited=!!kn.value;kn.classList.remove('y');$('#knH').textContent=''});
 kn.addEventListener('blur',()=>kn.value=kata(kn.value));
+if($('#sPt'))$('#sPt').onchange=e=>{const x=(ls.get('anes-patients')||[])[+e.target.value];if(!x)return;$('#sNo').value=x.no||'';nm.value=x.kanji||x.name||'';kn.value=x.name||'';edited=true;segs=[];$('#sKg').value=x.kg||'';$('#sBr').value=x.breed||'';$('#sAge').value=x.age||'';$('#sDz').value=x.dz||'';
+const pick=(g,v)=>{const c=$(`#shc [data-g="${g}"] [data-v="${v}"]`);if(c)c.click()};if(x.sp){pick('sp',x.sp)}if(x.sex)setTimeout(()=>pick('sex',x.sex),30);$('#sKg').focus();$('#sKg').blur();toast('前回の情報を入れました。体重・年齢を確認してください')};
 $('#sGo').onclick=()=>{const kg=parseFloat($('#sKg').value),raw=nm.value.trim();let name=kata(kn.value.trim());if(!name&&raw&&isKana(raw))name=kata(raw);kn.value=name;
 if(raw&&name&&hasK(raw)&&/^[゠-ヿ\s　]+$/.test(name)){const u=ls.get(YK)||{},m=raw.match(/^([一-龯々〆ヵヶ]+)([ぁ-ゖ゠-ヿ]*)$/);if(m&&name.endsWith(kata(m[2]))&&name.length>m[2].length)u[m[1]]=name.slice(0,name.length-m[2].length);else u[raw]=name;ls.set(YK,u)}
 if(raw&&!name){$('#sW').textContent='フリガナを入力してください（カタカナで表示します）';return}
 if(name&&!/^[゠-ヿ\s　]+$/.test(name)){$('#sW').textContent='フリガナはカタカナで入力してください';return}
 if(!(kg>0)){$('#sW').textContent='体重を入力してください';return}
+{const pl=ls.get('anes-patients')||[],rec={no:$('#sNo').value.trim(),name,kanji:raw&&raw!==name?raw:'',sp:gv('sp'),kg,sex:gv('sex'),breed:$('#sBr').value.trim(),age:$('#sAge').value.trim(),dz:$('#sDz').value.trim()};if(rec.name||rec.no)ls.set('anes-patients',[rec,...pl.filter(x=>!(x.no&&x.no===rec.no)&&!(!x.no&&x.name===rec.name))].slice(0,300))}
 S={c:{dz:$('#sDz').value.trim(),sex:gv('sex'),breed:$('#sBr').value.trim(),age:$('#sAge').value.trim(),no:$('#sNo').value.trim(),name,kanji:raw&&raw!==name?raw:'',sp:gv('sp'),kg,proc:$('#sPr').value.trim(),asa:gv('asa'),pr:gv('pr'),inh:gv('inh'),staff:$('#sSt').value.trim(),t0:Date.now()},ev:[]};
 save();close();render();$('#tabs [data-v="plan"]').click()}}
 
@@ -424,7 +439,7 @@ function render(){
 if(!S){$('#pt').textContent='症例未登録';openSetup();return}
 const c=S.c;
 $('#pt').innerHTML=`<span class="no">カルテNo ${esc(c.no||c.id||'未入力')}</span><span class="nm">${esc(c.name||'患者・ペット名なし')}</span>${c.sp} ${c.kg} kg・ASA ${c.asa}<small>${esc(c.proc||'術式未入力')}／プロトコル ${prf(c.pr).n}</small>`;
-$('#ph').innerHTML=PH.map(n=>{const e=phE(n);return `<button data-p="${n}" class="${e?'done':''}">${n}<small>${e?hm(e.t):'—'}</small></button>`}).join('');
+$('#ph').innerHTML=PH.map(n=>{const e=phE(n);return `<button data-p="${n}" class="${e?'done':''}">${n}<small>${e?hm(e.t):'—'}</small></button>`}).join('')+tmrHTML();tmrTick();
 const lv=vits().pop();
 $('#last').innerHTML=VF.map(f=>{const v=lv?lv.v[f.k]:null;return `<div class="cell ${lvl(f,v)}"><span>${f.n}</span><b>${v??'—'}</b><i>${f.u}</i></div>`}).join('')+`<div class="cell ${lv&&lv.v.ecg&&lv.v.ecg!=='洞調律'?'y':''}"><span>心電図</span><b style="font-size:17px">${lv?esc(lv.v.ecg||'—'):'—'}</b><i>${lv?hm(lv.t)+' 記録':''}</i></div>`;
 const GO2=['前投薬','導入','術中鎮痛','局所麻酔','抗生剤','止血剤','昇圧薬','ステロイド','その他','緊急薬'],own=used().filter(k=>D(k)&&!D(k).cr).sort((x,y)=>GO2.indexOf(D(x).g)-GO2.indexOf(D(y).g)),btn=d=>{const r=rng(d),co=cc(d);let t='量を入力';if(r){if(d.mx){const m=toMg(d.u,r[1]);t=`最大 ${r[1]} ${d.u}/kg<br>${d.u==='µg'?fmt(m*1000)+' µg':fmt(m)+' mg'}／${fmt(m/co)} mL`}else{const a=toMg(d.u,r[0]),b=toMg(d.u,r[1]);t=`${rs(r)} ${d.u}/kg<br>${d.u==='µg'?rr2(a*1000,b*1000)+' µg':rr2(a,b)+' mg'}／${rr2(a/co,b/co)} mL`}}return `<button data-d="${d.id}"><b>${d.n}</b><small>${t}</small></button>`};
@@ -490,12 +505,12 @@ function openInfo(){const c=S.c;
 sheet(`<h3>患者情報</h3><div class="lb">性別</div>${chips('sex',['♂','♂去勢','♀','♀避妊'],c.sex||'')}
 <div class="f2"><label>品種<input id="iBr" value="${esc(c.breed||'')}"></label><label>年齢<input id="iAge" value="${esc(c.age||'')}" placeholder="例：5歳3ヶ月"></label></div>
 <label>基礎疾患<input id="iDz" value="${esc(c.dz||'')}" placeholder="なければ空欄"></label>
-<div class="f2"><label>気管チューブ（サイズ）<input id="iTu" value="${esc(c.tube||'')}" placeholder="例：6.5"></label><label>血圧カフ（サイズ）<input id="iCf" value="${esc(c.cuff||'')}" placeholder="例：#3"></label></div>
+<div class="f2"><label>気管チューブ（サイズ）${selOpt('iTu',TUBES,c.tube,'選択してください')}</label><label>血圧カフ（サイズ）${selOpt('iCf',CUFFS,c.cuff,'選択してください')}</label></div>
 <label>麻酔担当<input id="iSt" value="${esc(c.staff||'')}"></label>
 <div class="acts"><button class="btn" data-x>やめる</button><button class="pri" id="iOk">保存</button></div>`);
 $('#iOk').onclick=()=>{Object.assign(c,{sex:gv('sex'),breed:$('#iBr').value.trim(),age:$('#iAge').value.trim(),dz:$('#iDz').value.trim(),tube:$('#iTu').value.trim(),cuff:$('#iCf').value.trim(),staff:$('#iSt').value.trim()});save();close();render();toast('患者情報を保存しました')}}
 function openTube(){
-sheet(`<h3>挿管</h3><div class="f2"><label>気管チューブ（サイズ）<input id="tTu" value="${esc(S.c.tube||'')}" placeholder="例：6.5"></label><label>血圧カフ（サイズ）<input id="tCf" value="${esc(S.c.cuff||'')}" placeholder="例：#3"></label></div>
+sheet(`<h3>挿管</h3><div class="f2"><label>気管チューブ（サイズ）${selOpt('tTu',TUBES,S.c.tube,'選択してください')}</label><label>血圧カフ（サイズ）${selOpt('tCf',CUFFS,S.c.cuff,'選択してください')}</label></div>
 ${whenHTML('挿管の時刻')}<div class="acts"><button class="btn" data-x>やめる</button><button class="pri" id="tOk">挿管を記録</button></div>`);whenBind();
 $('#tOk').onclick=()=>{S.c.tube=$('#tTu').value.trim();S.c.cuff=$('#tCf').value.trim();add({ty:'ph',n:'挿管',t:whenT()});close()}}
 
@@ -510,14 +525,50 @@ const MALE=/otoya|hattori|ichiro|keita|male|男性/i,FEM=/kyoko|o-ren|female|女
 const jaList=()=>sy?sy.getVoices().filter(x=>/^ja/i.test(x.lang)):[];
 function jaVoice(){const v=jaList();if(!v.length)return null;if(vName){const f=v.find(x=>x.name===vName);if(f)return f}return v.find(x=>FEM.test(x.name))||v.find(x=>!MALE.test(x.name))||v[0]}
 function speak(t,force){if(!sy||(!vOn&&!force))return;try{sy.cancel();const u=new SpeechSynthesisUtterance(t),v=jaVoice();u.lang='ja-JP';if(v)u.voice=v;const pr=PRE[vPre]||PRE.std;u.rate=pr[1];u.pitch=pr[2];u.volume=1;sy.speak(u)}catch(e){}}
-let unlocked=false;document.addEventListener('click',()=>{if(unlocked||!sy)return;unlocked=true;try{const u=new SpeechSynthesisUtterance(' ');u.volume=0;sy.speak(u)}catch(e){}},{capture:true});
+// ---- timers & alarm
+const TK='anes-timers',AK='anes-alarm';let TM=Object.assign({sw:{run:0,t0:0,acc:0,al:0,fired:0},cd:{run:0,end:0,rem:300000,dur:300000}},ls.get(TK)||{}),ALS=ls.get(AK)||'beep',ringing=null,AC=null;
+const tmrSave=()=>ls.set(TK,TM);
+const SOUNDS={beep:'ピピピ',chime:'チャイム',bell:'ベル',siren:'サイレン',soft:'やさしい'};
+function actx(){try{if(!AC)AC=new(window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();return AC}catch(e){return null}}
+function tone(f,st,d,type='sine',g=.35,f2){const a=actx();if(!a)return;const o=a.createOscillator(),v=a.createGain(),t=a.currentTime+st;o.type=type;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.linearRampToValueAtTime(f2,t+d);v.gain.setValueAtTime(0,t);v.gain.linearRampToValueAtTime(g,t+.01);v.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(v);v.connect(a.destination);o.start(t);o.stop(t+d+.05)}
+function playOnce(k){({beep:()=>[0,.18,.36].forEach(s=>tone(1760,s,.12,'square',.18)),
+chime:()=>{tone(988,0,.6);tone(784,.45,.9)},
+bell:()=>{tone(1320,0,1.2,'sine',.4);tone(2640,0,.6,'sine',.12)},
+siren:()=>tone(700,0,.9,'sawtooth',.15,1400),
+soft:()=>{tone(523,0,.5,'triangle',.3);tone(659,.25,.5,'triangle',.3);tone(784,.5,.7,'triangle',.3)}}[k]||(()=>{}))()}
+function ring(who){stopRing();let n=0;playOnce(ALS);ringing={who,h:setInterval(()=>{playOnce(ALS);if(++n>40)stopRing()},1500)};try{navigator.vibrate&&navigator.vibrate(500)}catch(e){}tmrTick()}
+function stopRing(){if(ringing){clearInterval(ringing.h);ringing=null}}
+const swMs=()=>TM.sw.acc+(TM.sw.run?Date.now()-TM.sw.t0:0),cdMs=()=>TM.cd.run?Math.max(0,TM.cd.end-Date.now()):TM.cd.rem;
+const clk2=ms=>{const s=Math.ceil(ms/1000),h=Math.floor(s/3600),m=Math.floor(s%3600/60);return (h?h+':'+pad(m):pad(m))+':'+pad(s%60)},clkF=ms=>{const s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor(s%3600/60);return (h?h+':'+pad(m):pad(m))+':'+pad(s%60)};
+function tmrHTML(){const sw=TM.sw,cd=TM.cd;return `<div class="tmr">
+<div class="tb ${ringing&&ringing.who==='sw'?'ring':''}"><div class="th">ストップウォッチ</div><b id="swV">${clkF(swMs())}</b>
+<div class="tr"><button class="btn" data-tm="swgo">${sw.run?'一時停止':'スタート'}</button><button class="btn" data-tm="swrs">リセット</button></div>
+<label class="tl">アラーム<select data-swa class="sel3">${[0,1,3,5,10,15,20,30,45,60].map(m=>`<option value="${m}"${m===sw.al?' selected':''}>${m?m+'分で鳴らす':'なし'}</option>`).join('')}</select></label></div>
+<div class="tb ${ringing&&ringing.who==='cd'?'ring':''}"><div class="th">タイマー</div><b id="cdV">${clk2(cdMs())}</b>
+<div class="tr">${[1,3,5,10,15,30].map(m=>`<button class="chip" data-cdm="${m}">${m}分</button>`).join('')}<button class="chip" data-cdp="-1">−1</button><button class="chip" data-cdp="1">＋1</button></div>
+<div class="tr"><button class="btn" data-tm="cdgo">${cd.run?'一時停止':'スタート'}</button><button class="btn" data-tm="cdrs">リセット</button></div></div>
+${ringing?'<button class="pri stopal" data-tm="stop">アラームを止める</button>':''}</div>`}
+function tmrRefresh(){const t=$('#ph .tmr');if(t)t.outerHTML=tmrHTML()}
+function tmrTick(){const a=$('#swV'),b=$('#cdV');if(a)a.textContent=clkF(swMs());if(b)b.textContent=clk2(cdMs());
+if(TM.sw.run&&TM.sw.al&&!TM.sw.fired&&swMs()>=TM.sw.al*60000){TM.sw.fired=1;tmrSave();ring('sw');tmrRefresh();speak('ストップウォッチ、'+TM.sw.al+'分です',true)}
+if(TM.cd.run&&cdMs()<=0){TM.cd.run=0;TM.cd.rem=0;tmrSave();ring('cd');tmrRefresh();speak('タイマーが終わりました',true)}}
+function tmrClick(e){const b=e.target.closest('[data-tm],[data-cdm],[data-cdp]');if(!b){return !!e.target.closest('.tmr')}actx();const sw=TM.sw,cd=TM.cd,k=b.dataset.tm;
+if(b.dataset.cdm){cd.run=0;cd.dur=cd.rem=+b.dataset.cdm*60000}
+else if(b.dataset.cdp){const base=cd.run?cdMs():cd.rem,n=Math.max(60000,Math.ceil(base/60000)*60000+(+b.dataset.cdp)*60000);if(cd.run)cd.end=Date.now()+n;else{cd.rem=n;cd.dur=n}}
+else if(k==='swgo'){if(sw.run){sw.acc=swMs();sw.run=0}else{sw.t0=Date.now();sw.run=1}}
+else if(k==='swrs'){TM.sw={run:0,t0:0,acc:0,al:sw.al,fired:0};if(ringing&&ringing.who==='sw')stopRing()}
+else if(k==='cdgo'){if(cd.run){cd.rem=cdMs();cd.run=0}else{if(cd.rem<=0)cd.rem=cd.dur;cd.end=Date.now()+cd.rem;cd.run=1}}
+else if(k==='cdrs'){cd.run=0;cd.rem=cd.dur;if(ringing&&ringing.who==='cd')stopRing()}
+else if(k==='stop')stopRing();
+tmrSave();tmrRefresh();return true}
+let unlocked=false;document.addEventListener('click',()=>actx(),{capture:true,once:true});document.addEventListener('click',()=>{if(unlocked||!sy)return;unlocked=true;try{const u=new SpeechSynthesisUtterance(' ');u.volume=0;sy.speak(u)}catch(e){}},{capture:true});
 function vUI(){const b=$('#vOn');if(!b)return;const sel=$('#vSel'),list=jaList();sel.innerHTML='<option value="">自動（女性の声を優先）</option>'+list.map(x=>`<option value="${esc(x.name)}"${x.name===vName?' selected':''}>${esc(x.name)}${FEM.test(x.name)?'（女性）':MALE.test(x.name)?'（男性）':''}</option>`).join('');
 $('#vPre').innerHTML=Object.entries(PRE).map(([k,[n]])=>`<button type="button" class="chip${k===vPre?' on':''}" data-pre="${k}">${n}</button>`).join('');b.textContent=vOn?'音声：オン':'音声：オフ';b.classList.toggle('pri',vOn);b.classList.toggle('btn',!vOn);const v=jaVoice();$('#vInfo').textContent=sy?(v?'使用する声：'+v.name:'この端末では日本語の声が見つかりません。端末の設定で日本語の音声を追加してください'):'このブラウザは音声読み上げに対応していません'}
 $('#vOn').onclick=()=>{vOn=!vOn;ls.set(VK,vOn);vUI()};
 $('#vSel').onchange=e=>{vName=e.target.value;ls.set(VN,vName);vUI();speak('この声でお知らせします',true)};
 $('#vPre').addEventListener('click',e=>{const b=e.target.closest('[data-pre]');if(!b)return;vPre=b.dataset.pre;ls.set(VPK,vPre);vUI();speak('5分たちました。記録してください',true)});
 $('#vTest').onclick=()=>{const o=vOn;vOn=true;speak('5分たちました。記録してください');vOn=o};
-if(sy&&'onvoiceschanged' in sy)sy.onvoiceschanged=vUI;vUI();rbUI();$('#rbOn').onclick=()=>{rbOn=!rbOn;ls.set(RK,rbOn);rbUI()};
+if(sy&&'onvoiceschanged' in sy)sy.onvoiceschanged=vUI;vUI();rbUI();const alUI=()=>{$('#alS').innerHTML=Object.entries(SOUNDS).map(([k,n])=>`<button type="button" class="chip${k===ALS?' on':''}" data-al="${k}">${n}</button>`).join('')};alUI();$('#alS').addEventListener('click',e=>{const b=e.target.closest('[data-al]');if(!b)return;ALS=b.dataset.al;ls.set(AK,ALS);alUI();playOnce(ALS)});$('#rbOn').onclick=()=>{rbOn=!rbOn;ls.set(RK,rbOn);rbUI()};
 function tick(){const nx=$('#nx'),msg=t=>{nx.textContent=t;nx.classList.add('sm');$('#due').hidden=true};nx.classList.remove('sm');
 if(!S||!S.ev.length){$('#el').textContent='--:--';msg('導入後に開始');return}
 const ind=phE('導入'),ext=phE('抜管'),st=ind?ind.t:S.ev[0].t;
@@ -526,9 +577,10 @@ if(ext){msg('抜管済み');return}
 const lv=vits().pop(),base=Math.max(lv?lv.t:0,ind?ind.t:0);if(!base){msg('導入後に開始');return}
 const left=300000-(Date.now()-base);
 nx.textContent=left>0?clk(left):'超過 '+clk(-left);$('#due').hidden=left>0;if(left<=0&&spoken!==base){spoken=base;speak('5分たちました。記録してください')}}
-setInterval(()=>{tick();if(S&&Date.now()%30000<1000)draw()},1000);
+setInterval(()=>{tick();tmrTick();if(S&&Date.now()%30000<1000)draw()},1000);
 
-$('#ph').addEventListener('click',e=>{const b=e.target.closest('[data-p]');if(!b)return;if(phE(b.dataset.p)){toast('記録済みです。取り消すときは下の流れから削除')}else if(b.dataset.p==='導入')openPrep();else if(b.dataset.p==='挿管')openTube();else openWhen(b.dataset.p)});
+$('#ph').addEventListener('change',e=>{const s=e.target.closest('[data-swa]');if(s){TM.sw.al=+s.value;TM.sw.fired=0;tmrSave()}});
+$('#ph').addEventListener('click',e=>{if(tmrClick(e))return;const b=e.target.closest('[data-p]');if(!b)return;if(phE(b.dataset.p)){toast('記録済みです。取り消すときは下の流れから削除')}else if(b.dataset.p==='導入')openPrep();else if(b.dataset.p==='挿管')openTube();else openWhen(b.dataset.p)});
 $('#dr').addEventListener('click',e=>{const b=e.target.closest('[data-d]');if(b)openDrug(b.dataset.d)});
 $('#cri').addEventListener('click',e=>{const b=e.target.closest('[data-c]'),s=e.target.closest('[data-cs]');if(b)openCri(b.dataset.c);if(s)add({ty:'cri',k:s.dataset.cs,act:'停止'})});
 $('#log').addEventListener('click',e=>{const tb=e.target.closest('[data-et]');if(tb){openEdit(tb.dataset.et);return}const b=e.target.closest('[data-del]');if(!b)return;if(!b.dataset.arm){b.dataset.arm=1;b.textContent='削除';setTimeout(()=>{if(b.isConnected){delete b.dataset.arm;b.textContent='×'}},3000);return}S.ev=S.ev.filter(x=>x.id!==b.dataset.del);save();render()});
