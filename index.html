@@ -540,15 +540,26 @@ function speak(t,force){if(!sy||(!vOn&&!force))return;try{sy.cancel();const u=ne
 const TK='anes-timers',AK='anes-alarm';let TM=Object.assign({sw:{run:0,t0:0,acc:0,al:0,fired:0},cd:{run:0,end:0,rem:300000,dur:300000}},ls.get(TK)||{}),ALS=ls.get(AK)||'beep',ringing=null,AC=null;
 const tmrSave=()=>ls.set(TK,TM);
 const SOUNDS={beep:'ピピピ',chime:'チャイム',bell:'ベル',siren:'サイレン',soft:'やさしい'};
-function actx(){try{if(!AC)AC=new(window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();return AC}catch(e){return null}}
-function tone(f,st,d,type='sine',g=.35,f2){const a=actx();if(!a)return;const o=a.createOscillator(),v=a.createGain(),t=a.currentTime+st;o.type=type;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.linearRampToValueAtTime(f2,t+d);v.gain.setValueAtTime(0,t);v.gain.linearRampToValueAtTime(g,t+.01);v.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(v);v.connect(a.destination);o.start(t);o.stop(t+d+.05)}
-function playOnce(k){({beep:()=>[0,.18,.36].forEach(s=>tone(1760,s,.12,'square',.18)),
-chime:()=>{tone(988,0,.6);tone(784,.45,.9)},
-bell:()=>{tone(1320,0,1.2,'sine',.4);tone(2640,0,.6,'sine',.12)},
-siren:()=>tone(700,0,.9,'sawtooth',.15,1400),
-soft:()=>{tone(523,0,.5,'triangle',.3);tone(659,.25,.5,'triangle',.3);tone(784,.5,.7,'triangle',.3)}}[k]||(()=>{}))()}
-function ring(who){stopRing();let n=0;playOnce(ALS);ringing={who,h:setInterval(()=>{playOnce(ALS);if(++n>40)stopRing()},1500)};try{navigator.vibrate&&navigator.vibrate(500)}catch(e){}tmrTick()}
-function stopRing(){if(ringing){clearInterval(ringing.h);ringing=null}}
+function actx(){return null}
+const PAT={beep:[[1760,0,.12,'square',.5],[1760,.18,.12,'square',.5],[1760,.36,.12,'square',.5]],
+chime:[[988,0,.6,'sine',.8],[784,.45,.9,'sine',.8]],
+bell:[[1320,0,1.2,'sine',.8],[2640,0,.6,'sine',.25]],
+siren:[[700,0,.9,'sawtooth',.45,1400]],
+soft:[[523,0,.5,'triangle',.7],[659,.25,.5,'triangle',.7],[784,.5,.7,'triangle',.7]]};
+const WAV={};
+function wav(k){if(WAV[k])return WAV[k];const sr=22050,len=Math.round(sr*1.5),buf=new Float32Array(len);
+(PAT[k]||PAT.beep).forEach(([f,st,d,ty,g,f2])=>{let ph=0;const s0=Math.round(st*sr),n=Math.round(d*sr);for(let i=0;i<n&&s0+i<len;i++){const t=i/sr,fr=f2?f+(f2-f)*t/d:f;ph+=fr/sr;const x=ph%1;
+const w=ty==='square'?(x<.5?1:-1):ty==='sawtooth'?2*x-1:ty==='triangle'?1-4*Math.abs(x-.5):Math.sin(2*Math.PI*ph);const env=Math.min(1,t/.01)*Math.exp(Math.log(.001)*t/d);buf[s0+i]+=w*g*env}});
+let pk=0;buf.forEach(v=>pk=Math.max(pk,Math.abs(v)));const sc=pk>0?.9/pk:1,ab=new ArrayBuffer(44+len*2),dv=new DataView(ab),ws=(o,t)=>{for(let i=0;i<t.length;i++)dv.setUint8(o+i,t.charCodeAt(i))};
+ws(0,'RIFF');dv.setUint32(4,36+len*2,true);ws(8,'WAVE');ws(12,'fmt ');dv.setUint32(16,16,true);dv.setUint16(20,1,true);dv.setUint16(22,1,true);dv.setUint32(24,sr,true);dv.setUint32(28,sr*2,true);dv.setUint16(32,2,true);dv.setUint16(34,16,true);ws(36,'data');dv.setUint32(40,len*2,true);
+for(let i=0;i<len;i++)dv.setInt16(44+i*2,Math.max(-1,Math.min(1,buf[i]*sc))*32767,true);return WAV[k]=URL.createObjectURL(new Blob([ab],{type:'audio/wav'}))}
+const AU=new Audio();AU.preload='auto';AU.setAttribute('playsinline','');
+try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(e){}
+let auOk=false;function auUnlock(){if(auOk)return;auOk=true;try{AU.src=wav(ALS);AU.muted=true;const p=AU.play();if(p)p.then(()=>{AU.pause();AU.currentTime=0;AU.muted=false}).catch(()=>{AU.muted=false;auOk=false})}catch(e){auOk=false}}
+function playA(k,loop){try{AU.muted=false;AU.loop=!!loop;if(AU.src!==wav(k))AU.src=wav(k);AU.currentTime=0;const p=AU.play();if(p)p.catch(()=>{})}catch(e){}}
+function playOnce(k){playA(k,false)}
+function ring(who){stopRing();playA(ALS,true);ringing={who,n:0,h:setInterval(()=>{if(!ringing)return;if(AU.paused)playA(ALS,true);if(++ringing.n>60)stopRing()},1000)};try{navigator.vibrate&&navigator.vibrate(500)}catch(e){}tmrTick()}
+function stopRing(){if(ringing){clearInterval(ringing.h);ringing=null}try{AU.pause();AU.loop=false;AU.currentTime=0}catch(e){}}
 const swMs=()=>TM.sw.acc+(TM.sw.run?Date.now()-TM.sw.t0:0),cdMs=()=>TM.cd.run?Math.max(0,TM.cd.end-Date.now()):TM.cd.rem;
 const clk2=ms=>{const s=Math.ceil(ms/1000),h=Math.floor(s/3600),m=Math.floor(s%3600/60);return (h?h+':'+pad(m):pad(m))+':'+pad(s%60)},clkF=ms=>{const s=Math.floor(ms/1000),h=Math.floor(s/3600),m=Math.floor(s%3600/60);return (h?h+':'+pad(m):pad(m))+':'+pad(s%60)};
 function tmrHTML(){const sw=TM.sw,cd=TM.cd;return `<div class="tmr">
@@ -561,8 +572,8 @@ function tmrHTML(){const sw=TM.sw,cd=TM.cd;return `<div class="tmr">
 ${ringing?'<button class="pri stopal" data-tm="stop">アラームを止める</button>':''}</div>`}
 function tmrRefresh(){const t=$('#ph .tmr');if(t)t.outerHTML=tmrHTML()}
 function tmrTick(){const a=$('#swV'),b=$('#cdV');if(a)a.textContent=clkF(swMs());if(b)b.textContent=clk2(cdMs());
-if(TM.sw.run&&TM.sw.al&&!TM.sw.fired&&swMs()>=TM.sw.al*60000){TM.sw.fired=1;tmrSave();ring('sw');tmrRefresh();speak('ストップウォッチ、'+TM.sw.al+'分です',true)}
-if(TM.cd.run&&cdMs()<=0){TM.cd.run=0;TM.cd.rem=0;tmrSave();ring('cd');tmrRefresh();speak('タイマーが終わりました',true)}}
+if(TM.sw.run&&TM.sw.al&&!TM.sw.fired&&swMs()>=TM.sw.al*60000){TM.sw.fired=1;tmrSave();ring('sw');tmrRefresh();setTimeout(()=>speak('ストップウォッチ、'+TM.sw.al+'分です',true),2500)}
+if(TM.cd.run&&cdMs()<=0){TM.cd.run=0;TM.cd.rem=0;tmrSave();ring('cd');tmrRefresh();setTimeout(()=>speak('タイマーが終わりました',true),2500)}}
 function tmrClick(e){const b=e.target.closest('[data-tm],[data-cdm],[data-cdp]');if(!b){return !!e.target.closest('.tmr')}actx();const sw=TM.sw,cd=TM.cd,k=b.dataset.tm;
 if(b.dataset.cdm){cd.run=0;cd.dur=cd.rem=+b.dataset.cdm*60000}
 else if(b.dataset.cdp){const base=cd.run?cdMs():cd.rem,n=Math.max(60000,Math.ceil(base/60000)*60000+(+b.dataset.cdp)*60000);if(cd.run)cd.end=Date.now()+n;else{cd.rem=n;cd.dur=n}}
@@ -572,7 +583,7 @@ else if(k==='cdgo'){if(cd.run){cd.rem=cdMs();cd.run=0}else{if(cd.rem<=0)cd.rem=c
 else if(k==='cdrs'){cd.run=0;cd.rem=cd.dur;if(ringing&&ringing.who==='cd')stopRing()}
 else if(k==='stop')stopRing();
 tmrSave();tmrRefresh();return true}
-let unlocked=false;document.addEventListener('click',()=>actx(),{capture:true,once:true});document.addEventListener('click',()=>{if(unlocked||!sy)return;unlocked=true;try{const u=new SpeechSynthesisUtterance(' ');u.volume=0;sy.speak(u)}catch(e){}},{capture:true});
+let unlocked=false;['touchend','click'].forEach(ev=>document.addEventListener(ev,auUnlock,{capture:true}));document.addEventListener('click',()=>{if(unlocked||!sy)return;unlocked=true;try{const u=new SpeechSynthesisUtterance(' ');u.volume=0;sy.speak(u)}catch(e){}},{capture:true});
 function vUI(){const b=$('#vOn');if(!b)return;const sel=$('#vSel'),list=jaList();sel.innerHTML='<option value="">自動（女性の声を優先）</option>'+list.map(x=>`<option value="${esc(x.name)}"${x.name===vName?' selected':''}>${esc(x.name)}${FEM.test(x.name)?'（女性）':MALE.test(x.name)?'（男性）':''}</option>`).join('');
 $('#vPre').innerHTML=Object.entries(PRE).map(([k,[n]])=>`<button type="button" class="chip${k===vPre?' on':''}" data-pre="${k}">${n}</button>`).join('');b.textContent=vOn?'音声：オン':'音声：オフ';b.classList.toggle('pri',vOn);b.classList.toggle('btn',!vOn);const v=jaVoice();$('#vInfo').textContent=sy?(v?'使用する声：'+v.name:'この端末では日本語の声が見つかりません。端末の設定で日本語の音声を追加してください'):'このブラウザは音声読み上げに対応していません'}
 $('#vOn').onclick=()=>{vOn=!vOn;ls.set(VK,vOn);vUI()};
